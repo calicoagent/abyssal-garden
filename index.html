@@ -66,6 +66,7 @@ function buildRockGeo(){const t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-
  const F=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
  const mid={};function mp(a,b){const k=a<b?a*100+b:b*100+a;if(mid[k]!==undefined)return mid[k];const A=V[a],B=V[b];V.push([(A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2]);return mid[k]=V.length-1}
  let NF=[];for(const f of F){const ab=mp(f[0],f[1]),bc=mp(f[1],f[2]),ca=mp(f[2],f[0]);NF.push([f[0],ab,ca],[f[1],bc,ab],[f[2],ca,bc],[ab,bc,ca])}
+ if(buildRockGeo.hi){const N2=[];for(const f of NF){const ab=mp(f[0],f[1]),bc=mp(f[1],f[2]),ca=mp(f[2],f[0]);N2.push([f[0],ab,ca],[f[1],bc,ab],[f[2],ca,bc],[ab,bc,ca])}NF=N2}
  const m=new MeshBuf();for(let i=0;i<V.length;i++){const v=V[i],l=Math.hypot(...v),d=1+ (hash2(i*3.7,i*1.3)-.5)*.55;V[i]=[v[0]/l*d,v[1]/l*d*.78,v[2]/l*d]}
  const acc=V.map(()=>[0,0,0]);
  for(const f of NF){const A=V[f[0]],B=V[f[1]],C=V[f[2]];const ux=B[0]-A[0],uy=B[1]-A[1],uz=B[2]-A[2],vx=C[0]-A[0],vy=C[1]-A[1],vz=C[2]-A[2];const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;for(const k of f){acc[k][0]+=nx;acc[k][1]+=ny;acc[k][2]+=nz}}
@@ -73,9 +74,10 @@ function buildRockGeo(){const t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-
  for(const f of NF)m.i.push(f[0],f[1],f[2]);
  return interleave(m)}
 /* ---- kelp blade strip ---- */
-function buildKelpGeo(){const m=new MeshBuf(),SEG=14,W=.55;
- for(let j=0;j<=SEG;j++){const v=j/SEG,w=W*(1-v*v*.88)*(0.7+0.3*Math.sin(v*9));m.p.push(-w,v,0,w,v,0);m.n.push(0,0,1,0,0,1);m.c.push(v,0,0,v,0,0);m.b.push(v,v);m.v+=2}
- for(let j=0;j<SEG;j++){const a=j*2;m.i.push(a,a+1,a+2,a+1,a+3,a+2)}return{verts:new Float32Array(m.p.length/3*10),raw:m}}
+function buildKelpGeo(){const m=new MeshBuf(),SEG=20,W=.55;
+ for(let j=0;j<=SEG;j++){const v=j/SEG,wf=Math.pow(Math.sin(Math.PI*(0.12+0.80*v)),1.2)*(1-0.75*v*v)+0.03,w=W*wf*(0.7+0.3*Math.sin(v*9)),zf=-w*0.55+Math.sin(v*20.0)*0.03;
+  m.p.push(-w,v,zf, 0,v,0, w,v,zf);m.n.push(-0.48,0,0.88, 0,0,1, 0.48,0,0.88);m.c.push(v,0,0, v,0,0, v,0,0);m.b.push(v,v,v);m.v+=3}
+ for(let j=0;j<SEG;j++){const a=j*3,b=a+3;m.i.push(a,a+1,b, a+1,b+1,b, a+1,a+2,b+1, a+2,b+2,b+1)}return{verts:new Float32Array(m.p.length/3*10),raw:m}}
 function kelpInterleave(){const g=buildKelpGeo(),m=g.raw,n=m.v,out=new Float32Array(n*10);
  for(let i=0;i<n;i++){out[i*10]=m.p[i*3];out[i*10+1]=m.p[i*3+1];out[i*10+2]=m.p[i*3+2];out[i*10+3]=0;out[i*10+4]=0;out[i*10+5]=1;out[i*10+6]=m.c[i*3];out[i*10+7]=0;out[i*10+8]=0;out[i*10+9]=m.b[i]}return{verts:out,idx:new Uint32Array(m.i)}}
 /* ---- cylinder (sponges / masts / pedestal) ---- */
@@ -90,20 +92,37 @@ function buildConeGeo(){const m=new MeshBuf(),seg=7;m.p.push(0,0,0);m.n.push(0,-
  m.p.push(0,1.6,0);m.n.push(0,1,0);m.c.push(1,1,1);m.b.push(0);m.v++;const tip=m.v-1;
  for(let i=0;i<seg;i++){m.i.push(0,1+i,2+i);m.i.push(1+i,tip,2+i)}return interleave(m)}
 /* ---- fish ---- */
-function buildFishGeo(){const m=new MeshBuf(),C=[.75,.85,.95];
- m.tri([0,0,1.1],[.15,0,0],[0,.20,-.5],[0,1,0],C,.15); m.tri([0,0,1.1],[0,.34,-.5],[-.15,0,0],[0,1,0],C,.15);
- m.tri([0,0,1.1],[0,-.20,-.5],[.28,0,0],[0,-1,0],C,.15); m.tri([0,0,1.1],[-.28,0,0],[0,-.34,-.5],[0,-1,0],C,.15);
- m.tri([.28,0,0],[0,0,-1.15],[0,.34,-.5],[1,0,0],C,.6); m.tri([-.28,0,0],[0,.34,-.5],[0,0,-1.15],[-1,0,0],C,.6);
- m.tri([.28,0,0],[0,-.34,-.5],[0,0,-1.15],[1,0,0],C,.6); m.tri([-.28,0,0],[0,0,-1.15],[0,-.34,-.5],[-1,0,0],C,.6);
- m.tri([0,.1,-1.1],[0,0,-1.15],[-.34,.04,-1.7],[0,1,0],[.5,.75,1],1); m.tri([0,.1,-1.1],[.34,.04,-1.7],[0,0,-1.15],[0,1,0],[.5,.75,1],1);
- m.tri([0,-.1,-1.1],[0,0,-1.15],[.34,-.04,-1.7],[0,-1,0],[.5,.75,1],1); m.tri([0,-.1,-1.1],[-.34,-.04,-1.7],[0,0,-1.15],[0,-1,0],[.5,.75,1],1);
+function buildFishGeo(){const m=new MeshBuf(),C=[.75,.85,.95],TC=[.5,.75,1];
+ const ST=[[1.15,0,0,0.02],[0.85,0.115,0.185,0.08],[0.30,0.175,0.285,0.22],[-0.30,0.150,0.245,0.45],[-0.80,0.075,0.125,0.75],[-1.05,0.030,0.045,1.0]];
+ const RAD=6;function V(x,y,z,nx,ny,nz,col,b){m.p.push(x,y,z);m.n.push(nx,ny,nz);m.c.push(col[0],col[1],col[2]);m.b.push(b);m.v++}
+ V(0,0,1.15,0,0,1,C,0.02);const nose=0;const rings=[];
+ for(let si=1;si<ST.length;si++){const st=ST[si],ring=[];
+  for(let k=0;k<RAD;k++){const a=k/RAD*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);
+   let nx=ca/Math.max(st[1],0.03),ny=sa/Math.max(st[2],0.03);const il=1/Math.hypot(nx,ny);
+   V(ca*st[1],sa*st[2],st[0],nx*il,ny*il,0,C,st[3]);ring.push(m.v-1)}
+  rings.push(ring)}
+ for(let k=0;k<RAD;k++)m.i.push(nose,rings[0][k],rings[0][(k+1)%RAD]);
+ for(let r=0;r<rings.length-1;r++)for(let k=0;k<RAD;k++){const a=rings[r][k],b=rings[r][(k+1)%RAD],c=rings[r+1][k],d=rings[r+1][(k+1)%RAD];m.i.push(a,c,b,b,c,d)}
+ const ped=rings[rings.length-1];
+ m.tri([0,0.02,-1.02],[0,0.44,-1.62],[0,0.03,-1.36],[1,0,0],TC,1); m.tri([0,-0.02,-1.02],[0,0.03,-1.36],[0,-0.44,-1.62],[1,0,0],TC,1);
+ m.tri([0,0.27,0.28],[0,0.30,-0.38],[0,0.54,-0.16],[1,0,0],[.55,.78,1],0.3);
  return interleave(m)}
 /* ---- manta ---- */
 function buildMantaGeo(){const m=new MeshBuf(),C=[.32,.38,.55];
- const rows=[[-.12,0,1.5],[-1.5,.06,.5],[-3.1,.25,-.6],[-1.4,.1,-1.3],[-.1,0,-1.7],[1.4,.1,-1.3],[3.1,.25,-.6],[1.5,.06,.5]];
- const ctr=[0,.16,.1];function T(a,b,c,bend){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const il=1/(Math.hypot(nx,ny,nz)||1);m.tri(a,b,c,[nx*il,ny*il,nz*il],C,bend)}
- for(let i=0;i<7;i++){const a=rows[i],b=rows[i+1];T(ctr,a,b,Math.max(Math.abs(a[0]),Math.abs(b[0]))/3)}
- m.tri([-.08,0,-1.6],[.08,0,-1.6],[0,0,-3.4],[0,1,0],C,.25);return interleave(m)}
+ const XS=[-3.2,-2.4,-1.6,-0.8,0,0.8,1.6,2.4,3.2],TS=[0,0.5,1],grid=[];
+ for(let xi=0;xi<XS.length;xi++){const x=XS[xi],ax=Math.abs(x)/3.2,zf=1.55-0.34*Math.abs(x),zb=-0.75-0.10*Math.abs(x)+0.55*(1-ax),row=[];
+  for(let ti=0;ti<TS.length;ti++){const t=TS[ti],y=0.17*Math.sin(Math.PI*t)*(1-0.3*ax)-0.30*ax*ax*t;
+   m.p.push(x,y,zf+(zb-zf)*t);m.n.push(0,1,0);m.c.push(C[0],C[1],C[2]);m.b.push(ax);m.v++;row.push(m.v-1)}
+  grid.push(row)}
+ const idx=[];for(let xi=0;xi<XS.length-1;xi++)for(let ti=0;ti<TS.length-1;ti++){const a=grid[xi][ti],b=grid[xi+1][ti],c=grid[xi][ti+1],d=grid[xi+1][ti+1];idx.push(a,b,c,b,d,c)}
+ const acc=[];for(let i=0;i<m.v;i++)acc.push([0,0,0]);
+ for(let i=0;i<idx.length;i+=3){const A=idx[i],B=idx[i+1],Cc=idx[i+2];const ax=m.p[A*3],ay=m.p[A*3+1],az=m.p[A*3+2],bx=m.p[B*3],by=m.p[B*3+1],bz=m.p[B*3+2],cx=m.p[Cc*3],cy=m.p[Cc*3+1],cz=m.p[Cc*3+2];
+  const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+  for(const k of[A,B,Cc]){acc[k][0]+=nx;acc[k][1]+=ny;acc[k][2]+=nz}}
+ for(let i=0;i<m.v;i++){const a=acc[i],il=1/(Math.hypot(a[0],a[1],a[2])||1);m.n[i*3]=a[0]*il;m.n[i*3+1]=a[1]*il;m.n[i*3+2]=a[2]*il}
+ for(const i of idx)m.i.push(i);
+ m.tri([-0.07,0,-1.15],[0.07,0,-1.15],[0,0,-3.6],[0,1,0],C,0.25);
+ return interleave(m)}
 /* ---- quad (billboards / shafts) ---- */
 function buildQuadGeo(){const m=new MeshBuf();m.quad([-1,-1,0],[1,-1,0],[1,1,0],[-1,1,0],[0,0,1],[0,0,0],0);
  const out=new Float32Array(40);for(let i=0;i<4;i++){out[i*10]=m.p[i*3];out[i*10+1]=m.p[i*3+1];out[i*10+2]=0;out[i*10+3]=0;out[i*10+4]=0;out[i*10+5]=1;out[i*10+6]=m.p[i*3];out[i*10+7]=m.p[i*3+1];out[i*10+8]=0;out[i*10+9]=0}return{verts:out,idx:new Uint32Array(m.i)}}
@@ -111,7 +130,7 @@ function buildQuadGeo(){const m=new MeshBuf();m.quad([-1,-1,0],[1,-1,0],[1,1,0],
 function InstList(){this.d=[]} /* ox oy oz | sx sy sz | rotY phase spark seed | r g b  => 13 floats */
 InstList.prototype.add=function(x,y,z,sx,sy,sz,rot,r,g,b,seed){this.d.push(x,y,z,sx,sy,sz,rot,rnd()*6.28,0,seed||0,r,g,b,0)};
 InstList.prototype.buf=function(){return new Float32Array(this.d)};
-const CLEAR=[[0,36,7],[-5,8,6],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6],[32,-15,5],[2,-33,5]];
+const CLEAR=[[-4,-40,5],[0,36,7],[-5,8,6],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6],[32,-15,5],[2,-33,5]];
 function scatterPos(minR,maxR){for(let k=0;k<60;k++){const a=rnd()*6.283,r=minR+rnd()*(maxR-minR),x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)>104||Math.abs(z)>104)continue;let bad=false;for(const c of CLEAR){const dx=x-c[0],dz=z-c[1];if(dx*dx+dz*dz<c[2]*c[2]){bad=true;break}}if(!bad)return[x,groundH(x,z),z]}return[60,groundH(60,60),60]}
 const rocks=new InstList(),foliage=new InstList(),sponges=new InstList(),corals=new InstList(),cover=new InstList(),kelp=new InstList();
 /* canyon wall rocks + scattered boulders */
@@ -127,6 +146,7 @@ for(let i=0;i<880;i++){let p=scatterPos(2,100);if(p[1]>2)p=scatterPos(2,55);cons
 /* iridescent foliage fans (squashed spheres) + magenta ground cover */
 for(let i=0;i<420;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*1.5;foliage.add(x,y+s*.15,z,s,s*.45,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
 for(let i=0;i<850;i++){let[x,y,z]=scatterPos(2,100);if(y>6){const q=scatterPos(2,60);x=q[0];y=q[1];z=q[2]}const s=.35+rnd()*.8;cover.add(x,y+.06,z,s,s*.22,s,rnd()*6.28,.78,.16+rnd()*.15,.55+rnd()*.2)}
+for(let i=0;i<300;i++){let[x,y,z]=scatterPos(14,50);if(y>6){const q=scatterPos(14,44);x=q[0];y=q[1];z=q[2]}const s=.8+rnd()*1.3;cover.add(x,y+.06,z,s,s*.22,s,rnd()*6.28,.80,.15+rnd()*.16,.58+rnd()*.2)}
 /* barrel sponges */
 for(let i=0;i<130;i++){let[x,y,z]=scatterPos(4,95);if(y>6){const q=scatterPos(4,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*.9;sponges.add(x,y,z,s,1+rnd()*1.6,s,rnd()*6.28,.85,.55+rnd()*.25,.18)}
 /* coral cones clusters */
@@ -140,7 +160,7 @@ for(let i=0;i<520;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,
  for(const q of[[-4,3.5,1.2],[0.5,3.5,-1.4],[3,3.5,1.0],[5.5,3.5,-1.2],[-6.5,4.9,0.5]]){const p=SP(q[0],q[1],q[2]),s=.7+rnd()*.4;foliage.add(p[0],p[1],p[2],s,s*.45,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
  for(const q of[[8,0.8,2.3],[-7.5,2.2,2.3],[1,3.5,1.6]]){const p=SP(q[0],q[1],q[2]),s=.5+rnd()*.5,warm=rnd();corals.add(p[0],p[1],p[2],s,s*(0.8+rnd()),s,rnd()*6.28,1,.35+warm*.3,.45+warm*.25)}})();
 /* ============ set pieces: ship + whale fluke (one static mesh) ============ */
-function buildSetPieces(){const m=new MeshBuf(),wood=[.34,.23,.13],wood2=[.44,.31,.18],iron=[.30,.33,.38],stone=[.68,.70,.76],stone2=[.58,.60,.66];
+function buildSetPieces(){const m=new MeshBuf(),wood=[.48,.30,.15],wood2=[.58,.40,.22],iron=[.30,.33,.38],stone=[.68,.70,.76],stone2=[.58,.60,.66];
  const sx=19,sz=-30,sy=groundH(sx,sz)+1.1,ry=.7,tilt=.16;
  const L=(x,y,z)=>{const cs=Math.cos(ry),sn=Math.sin(ry);return[sx+x*cs+z*sn,sy+y+Math.sin(tilt)*x,sz-x*sn+z*cs]};
  function BX(cx,cy,cz,bx,by,bz,col){const hx=bx/2,hy=by/2,hz=bz/2;const cs=Math.cos(ry),sn=Math.sin(ry);
@@ -148,18 +168,27 @@ function buildSetPieces(){const m=new MeshBuf(),wood=[.34,.23,.13],wood2=[.44,.3
   const R=(x,y,z)=>{const y1=y*cs2-z*sn2,z1=y*sn2+z*cs2;const wx=cx+x,wy=cy+y1,wz=cz+z1;return[sx+wx*cs+wz*sn,sy+wy,sz-wx*sn+wz*cs]};
   const F=[[[-hx,-hy,hz],[hx,-hy,hz],[hx,hy,hz],[-hx,hy,hz],[0,0,1]],[[hx,-hy,-hz],[-hx,-hy,-hz],[-hx,hy,-hz],[hx,hy,-hz],[0,0,-1]],[[hx,-hy,hz],[hx,-hy,-hz],[hx,hy,-hz],[hx,hy,hz],[1,0,0]],[[-hx,-hy,-hz],[-hx,-hy,hz],[-hx,hy,hz],[-hx,hy,-hz],[-1,0,0]],[[-hx,hy,hz],[hx,hy,hz],[hx,hy,-hz],[-hx,hy,-hz],[0,1,0]],[[-hx,-hy,-hz],[hx,-hy,-hz],[hx,-hy,hz],[-hx,-hy,hz],[0,-1,0]]];
   for(const f of F)m.quad(R(...f[0]),R(...f[1]),R(...f[2]),R(...f[3]),f[4],col,0)}
- for(let i=0;i<6;i++){const fx=-7.5+i*3,tp=Math.sin((i+0.5)/6*Math.PI);BX(fx,0.35+(1-tp)*0.55,0,3.15,3.9,2.7+2.3*tp,i%2?wood2:wood)}
- BX(-6.5,3.0,0,3,3.6,4.4,wood2); BX(6.8,2.8,0,2.4,3.2,4.2,wood2); BX(0,2.9,2.3,11,3.0,.35,wood2); BX(0,2.9,-2.3,11,3.0,.35,wood2);
- BX(-1,3.2,0,9,.5,3.8,wood); /* deck */
- BX(-2,8,0,.55,9,.55,wood2); BX(3.5,5.2,.0,.45,3.6,.45,wood2); BX(-2,10.5,0,3.4,.3,.3,iron); /* masts */
+ {const SEC=13,CROSS=9,hv=[],dk=[],hidx=[];
+  const HW=t=>{let hw=0.4+3.0*Math.sin(Math.PI*(0.10+0.80*t));if(t>0.8)hw*=1-(t-0.8)*3.0;return hw};
+  for(let si=0;si<SEC;si++){const t=si/(SEC-1),fx=-9+t*18,hw=HW(t),dy=3.1+1.5*Math.pow(2*t-1,2),ky=-1.9+1.6*Math.pow(2*t-1,2);
+   const pts=[[-hw,dy],[-hw*0.98,dy-0.8],[-hw*0.90,dy-1.7],[-hw*0.55,ky+0.55],[0,ky],[hw*0.55,ky+0.55],[hw*0.90,dy-1.7],[hw*0.98,dy-0.8],[hw,dy]],col=si%2?wood2:wood;
+   for(let ci=0;ci<CROSS;ci++){const wp=L(fx,pts[ci][1],pts[ci][0]);hv.push(m.v);m.p.push(wp[0],wp[1],wp[2]);m.n.push(0,1,0);m.c.push(col[0],col[1],col[2]);m.b.push(0);m.v++}
+   for(const zz of[-hw,hw]){const wp=L(fx,dy+0.04,zz);dk.push(m.v);m.p.push(wp[0],wp[1],wp[2]);m.n.push(0,1,0);m.c.push(wood2[0],wood2[1],wood2[2]);m.b.push(0);m.v++}}
+  for(let si=0;si<SEC-1;si++){for(let ci=0;ci<CROSS-1;ci++){const a=hv[si*CROSS+ci],b=hv[(si+1)*CROSS+ci];hidx.push(a,b,a+1,b,b+1,a+1)}
+   const a=dk[si*2],b=dk[si*2+2];hidx.push(a,b,a+1,b,b+1,a+1)}
+  const nacc={};for(const vi of hv.concat(dk))nacc[vi]=[0,0,0];
+  for(let i=0;i<hidx.length;i+=3){const A=hidx[i],B=hidx[i+1],C2=hidx[i+2];
+   const ax=m.p[A*3],ay=m.p[A*3+1],az=m.p[A*3+2],bx=m.p[B*3],by=m.p[B*3+1],bz=m.p[B*3+2],cx=m.p[C2*3],cy=m.p[C2*3+1],cz=m.p[C2*3+2];
+   const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+   for(const k of[A,B,C2]){nacc[k][0]+=nx;nacc[k][1]+=ny;nacc[k][2]+=nz}}
+  const fix=(list,vi,wantUp)=>{if((nacc[vi][1]>0)!==wantUp)for(const k of list){nacc[k][0]*=-1;nacc[k][1]*=-1;nacc[k][2]*=-1}};
+  fix(hv,hv[6*CROSS+4],false); fix(dk,dk[6*2],true);
+  for(const vi of hv.concat(dk)){const a=nacc[vi],il=1/(Math.hypot(a[0],a[1],a[2])||1);m.n[vi*3]=a[0]*il;m.n[vi*3+1]=a[1]*il;m.n[vi*3+2]=a[2]*il}
+  for(const i of hidx)m.i.push(i)}
+ BX(-6.5,3.9,0,2.6,2.6,3.8,wood2); BX(6.8,3.9,0,2.0,2.4,3.6,wood2);
+ BX(-2,6.8,0,.55,6.6,.55,wood2); BX(3.5,5.2,.0,.45,3.6,.45,wood2); BX(-2,8.6,0,2.6,.3,.3,iron); /* masts (main broken) */
  BX(10.6,1.7,0,3.4,3.2,2.8,wood); BX(12.6,4.0,0,5.2,.32,.32,wood2); BX(0.5,4.15,0.9,8.2,.38,.38,wood2); BX(2.2,3.95,1.3,1.1,1.1,1.1,wood2); BX(-3.4,3.95,-1.2,1.3,1.1,1.3,iron);
  BX(5.5,1,3.4,2.6,1.6,1.4,iron); BX(-9.5,.6,-2.5,2,1.2,1.6,iron); /* debris */
- {const bw=L(9.9,1.0,0); m.box(bw[0],bw[1],bw[2],5.2,3.4,3.8,ry+0.55,wood);
-  const sw=L(-9.9,1.2,0); m.box(sw[0],sw[1],sw[2],4.6,3.8,3.6,ry-0.5,wood2);
-  const p1=L(0,1.5,2.48); m.box(p1[0],p1[1],p1[2],15.6,0.55,0.18,ry,wood2);
-  const p2=L(0,1.5,-2.48); m.box(p2[0],p2[1],p2[2],15.6,0.55,0.18,ry,wood2);
-  const p3=L(0,0.2,2.48); m.box(p3[0],p3[1],p3[2],15.6,0.5,0.18,ry,wood);}
- BX(0,-1.6,0,13,.9,1.2,wood2); BX(8.6,1.4,0,2.6,4.4,3.4,wood); BX(-8.8,1.2,0,2.2,4.0,3.2,wood2);
  /* whale-fluke sculpture at (-9,-48) */
  const wx=-9,wz=-48,wy=groundH(wx,wz);
  m.box(wx,wy+1.2,wz,7,2.4,7,0,stone2); m.box(wx,wy+3.1,wz,4.6,1.6,4.6,.4,stone);
@@ -187,7 +216,7 @@ function buildSchools(){const L=new InstList();const C=[[0,4.5,-16,8],[-22,6,-36
  for(let s=0;s<C.length;s++)for(let i=0;i<115;i++){const warm=s>=2&&rnd()<.3;
   L.add(C[s][0],C[s][1],C[s][2],.30+rnd()*.18,0,0,C[s][3],warm?.95:.68,warm?.42:.78,warm?.8:.92);
   const st=L.d.length-14;L.d[st+7]=rnd()*6.283;L.d[st+9]=.22+ (i%7)*.015}return L}
-function buildMantas(){const L=new InstList();const C=[[0,11,-30],[-25,13,-45],[6,8,-44],[-10,14,-60],[15,10,-48]];for(let i=0;i<5;i++){L.add(C[i][0],C[i][1],C[i][2],1.3+rnd()*.6,0,0,13+rnd()*8,.36,.42,.54);const st=L.d.length-14;L.d[st+7]=i*1.7;L.d[st+9]=.05+rnd()*.02}return L}
+function buildMantas(){const L=new InstList();const C=[[0,11,-30],[-25,13,-45],[6,8,-44],[-10,14,-60],[15,10,-48]];for(let i=0;i<5;i++){L.add(C[i][0],C[i][1],C[i][2],1.05+rnd()*.45,0,0,10+rnd()*6,.36,.42,.54);const st=L.d.length-14;L.d[st+7]=i*1.7;L.d[st+9]=.05+rnd()*.02}return L}
 function buildBubbles(){const L=new InstList();for(let i=0;i<320;i++){const p=i<70?[19+(rnd()-.5)*8,groundH(19,-30)+1,-30+(rnd()-.5)*8]:scatterPos(3,95);L.add(p[0],p[1],p[2],.10+rnd()*.22,0,0,20,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+8]=1;L.d[st+9]=.5+rnd()*1.1}return L}
 function buildParticles(){const L=new InstList();for(let i=0;i<900;i++){const[x,,z]=scatterPos(0,100);L.add(x,-8+rnd()*26,z,.03+rnd()*.07,0,0,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+9]=rnd()}return L}
 function buildShafts(){const L=new InstList();const spots=[[-6,-8],[10,-30],[-24,-32],[4,-52],[22,-16],[-14,8],[-2,-24],[16,-44],[-30,-6],[-8,-34],[24,-34],[0,14]];for(const sp of spots){L.add(sp[0],10,sp[1],6+rnd()*4,26,1,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28}return L}
@@ -196,7 +225,7 @@ const canvas=document.getElementById('c'),hud=document.getElementById('hud'),uiE
 const Q=new URLSearchParams(location.search);
 const POSES=[
  [[0,2,36],[0,-4,-12]], [[-5,-.5,8],[-12,-5,-22]], [[-27,3,10],[-27,2,-16]],
- [[32,1,-15],[19,-5,-30]], [[2,0,-33],[-9,-1,-48]], [[16,-3,-38],[-6,14,-58]]];
+ [[30.5,0,-17],[19,-4,-30]], [[2,0,-33],[-9,-1,-48]], [[16,-3,-38],[-6,14,-58]]];
 const cam={p:new Float32Array([0,3,36]),yaw:Math.PI,pitch:-.04};
 let poseIdx=Q.has('pose')?+Q.get('pose'):0;
 if(Q.has('pose')){const P=POSES[poseIdx%6];cam.p.set(P[0]);const dx=P[1][0]-P[0][0],dy=P[1][1]-P[0][1],dz=P[1][2]-P[0][2];cam.yaw=Math.atan2(-dx,-dz);cam.pitch=Math.atan2(dy,Math.hypot(dx,dz))}
@@ -230,8 +259,12 @@ fn caust(p:vec2f,t:f32)->f32{
  var q=p*0.42; var v=0.0;
  let a=sin(q.x*1.31+t*0.9)+sin(q.y*1.13-t*0.7)+sin((q.x+q.y)*0.71+t*0.5);
  let b=sin(q.x*0.83-t*0.6)+sin(q.y*1.47+t*0.8)+sin((q.x-q.y)*0.93-t*0.4);
- v=pow(clamp(1.0-abs(a*b)*0.28,0.0,1.0),4.0);
+ v=pow(clamp(1.0-abs(a*b)*0.28,0.0,1.0),5.0);
  return v;}
+fn vhash(p:vec2f)->f32{return fract(sin(dot(p,vec2f(127.1,311.7)))*43758.5453);}
+fn vnoise(p:vec2f)->f32{let i=floor(p);let f=fract(p);let sm=f*f*(3.0-2.0*f);
+ return mix(mix(vhash(i),vhash(i+vec2f(1.0,0.0)),sm.x),mix(vhash(i+vec2f(0.0,1.0)),vhash(i+vec2f(1.0,1.0)),sm.x),sm.y);}
+fn fbm2(p:vec2f)->f32{return vnoise(p)*0.6+vnoise(p*2.13)*0.28+vnoise(p*4.41)*0.12;}
 fn fogMix(col:vec3f,wp:vec3f)->vec3f{
  let d=length(wp-u.cam.xyz);
  let depthT=clamp((22.0-wp.y)/46.0,0.0,1.0);
@@ -242,11 +275,18 @@ fn fogMix(col:vec3f,wp:vec3f)->vec3f{
  return mix(absorbed,fc,clamp(f,0.0,1.0));}
 fn lightCalc(col:vec3f,n:vec3f,wp:vec3f,causticAmt:f32)->vec3f{
  let ndl=max(dot(n,u.sun.xyz),0.0);
- let amb=mix(vec3f(0.12,0.27,0.42),vec3f(0.28,0.56,0.62),n.y*0.5+0.5);
- var c=col*(amb+vec3f(0.55,0.62,0.55)*ndl*0.85);
+ let amb=mix(vec3f(0.10,0.24,0.40),vec3f(0.27,0.55,0.62),n.y*0.5+0.5);
+ let mott=0.72+0.56*fbm2(wp.xz*1.35+wp.yy*0.8);
+ var c=col*mott*(amb+vec3f(0.60,0.66,0.58)*ndl*0.9);
  if(n.y>0.45){c+=vec3f(0.42,0.85,0.80)*caust(wp.xz*0.55,u.cam.w)*causticAmt*(0.35+0.65*ndl);}
- let vd=normalize(u.cam.xyz-wp); let fr=pow(1.0-max(dot(n,vd),0.0),3.0);
- c+=fr*vec3f(0.05,0.25,0.30);
+ let vd=normalize(u.cam.xyz-wp);
+ let hv=normalize(vd+u.sun.xyz);
+ let spec=pow(max(dot(n,hv),0.0),64.0)*(0.30+0.80*fbm2(wp.xz*0.7+wp.yy*0.5))*ndl;
+ c+=spec*vec3f(0.9,1.0,0.95);
+ let spk2=step(0.935,vnoise(wp.xz*13.0+wp.yy*10.0))*step(0.935,vnoise(wp.zx*15.0-wp.yy*9.0));
+ c+=spk2*vec3f(0.20,0.19,0.16)*(0.35+0.65*ndl);
+ let fr=pow(1.0-max(dot(n,vd),0.0),3.0);
+ c+=fr*vec3f(0.06,0.28,0.34);
  return c;}
 `;
 const VS_PLAIN=COMMON+`
@@ -278,16 +318,27 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) h:f32,@
  let h=b; let t=u.cam.w;
  let sway=(sin(t*0.85+dat.y+h*2.1)+0.5*sin(t*1.7+dat.y*1.3+h*3.7))*0.85*h*h;
  let cs=cos(dat.x); let sn=sin(dat.x);
- var lp=vec3f(p.x*scl.x+sway, h*scl.y, p.z+sway*0.35);
+ let tw=h*(1.5+sin(dat.y)*0.9); let ct=cos(tw); let stw=sin(tw);
+ let px=p.x*ct-p.z*stw; let pz=p.x*stw+p.z*ct;
+ let curv=h*h*(1.9+0.8*sin(dat.y*2.3));
+ var lp=vec3f(px*scl.x+sway+curv, h*scl.y, pz*scl.x+sway*0.35+h*h*0.6*cos(dat.y*1.7));
  let rp=vec3f(lp.x*cs+lp.z*sn,lp.y,-lp.x*sn+lp.z*cs);
  var o:O; o.wp=off+rp; o.h=h; o.ph=dat.y; o.side=p.x; o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_KELP=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32)->@location(0) vec4f{
  var base=mix(vec3f(0.015,0.16,0.05),vec3f(0.10,0.48,0.13),h);
  base=mix(base,vec3f(0.45,0.55,0.10),pow(h,3.0)*0.7);
- let vein=0.85+0.3*sin(h*46.0+ph);
+ let vein=0.93+0.10*sin(h*46.0+ph);
  base*=0.70+0.55*clamp(1.0-abs(side)/(0.60*(1.0-h*0.45)),0.0,1.0);
  var c=base*vein*(0.35+0.75*max(u.sun.y,0.0));
+ c*=0.82+0.36*fbm2(vec2f(h*7.0+ph*3.0,side*2.5));
+ let wprof=pow(sin(3.14159*(0.12+0.80*h)),1.2)*(1.0-0.75*h*h)+0.03;
+ let edge=clamp(abs(side)/(0.55*wprof+0.001),0.0,1.0);
+ c*=0.74+0.26*(1.0-edge*edge);
+ c+=vec3f(0.05,0.10,0.02)*(1.0-smoothstep(0.0,0.30,edge));
+ let vd2=normalize(u.cam.xyz-wp);
+ let tl=pow(max(dot(-vd2,u.sun.xyz),0.0),3.0);
+ c+=vec3f(0.10,0.42,0.10)*tl*(0.35+0.65*h);
  let cp1=vec2f(h*46.0,(side+0.6)*5.0); let ci1=floor(cp1);
  let cf1=hash1(ci1.x*7.1+ci1.y*3.7+floor(ph*10.0));
  let ct1=ci1+0.2+0.6*vec2f(hash1(ci1.x*3.3+ci1.y*9.1),hash1(ci1.x*5.7+ci1.y*1.3));
@@ -345,8 +396,10 @@ const FS_SURF=COMMON+`
  let vd=normalize(wp-u.cam.xyz); let sd=max(dot(vd,u.sun.xyz),0.0);
  c+=vec3f(0.9,0.95,0.8)*pow(sd,18.0)*1.4;
  c+=vec3f(0.5,0.8,0.85)*pow(sd,3.0)*0.35;
+ c+=vec3f(1.0,0.98,0.85)*pow(sd,240.0)*2.6;
  let d=length(wp-u.cam.xyz); let f=1.0-exp(-d*0.010);
- c=mix(c,vec3f(0.01,0.09,0.28),f*0.55);
+ let f2=smoothstep(40.0,200.0,d);
+ c=mix(c,vec3f(0.008,0.075,0.26),max(f*0.55,f2*0.9));
  return vec4f(c,0.94);}`;
 const FS_MANTA=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f)->@location(0) vec4f{
@@ -389,7 +442,8 @@ const FS_SHAFT=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) loc:vec2f,@location(2) ph:f32)->@location(0) vec4f{
  let ex=1.0-abs(loc.x); let ey=loc.y*0.5+0.5;
  let flick=0.6+0.4*sin(u.cam.w*0.7+ph+loc.x*6.0);
- let a=pow(ex,2.6)*(1.0-ey)*(0.35+0.65*ey)*0.55*flick;
+ let brk=0.65+0.6*fbm2(wp.xz*0.33+wp.yy*0.21);
+ let a=pow(ex,2.6)*pow(sin(3.14159*ey),1.5)*0.68*flick*brk;
  let d=length(wp-u.cam.xyz); let a2=a*exp(-d*0.008);
  if(a2<0.003){discard;} return vec4f(vec3f(0.45,0.85,0.9),a2);}`;
 const VS_POST=`
@@ -409,10 +463,13 @@ fn hash1(n:f32)->f32{return fract(sin(n)*43758.5453);}
  if(inten>0.001){ let dir=sunUv-uv; let dist=length(dir); let stepv=dir/22.0;
    var acc=vec3f(0.0); var w=1.0; var p=uv;
    for(var i=0;i<22;i++){ p+=stepv; let s=textureSample(tex,smp,p).rgb;
-     acc+=max(s-vec3f(0.55),vec3f(0.0))*w; w*=0.86; }
-   col+=acc*0.12*inten*exp(-dist*1.4)*vec3f(0.6,0.95,1.05); }
+     acc+=max(s-vec3f(0.40),vec3f(0.0))*w; w*=0.86; }
+   col+=acc*0.17*inten*exp(-dist*1.4)*vec3f(0.6,0.95,1.05); }
  let vg=1.0-0.32*pow(length((uv-0.5)*vec2f(1.15,1.3)),2.2);
- col*=vg; col=pow(col,vec3f(0.985)); col*=vec3f(0.97,1.03,1.06);
+ col*=vg; col*=1.18;
+ col=clamp((col*(2.51*col+0.03))/(col*(2.43*col+0.59)+0.14),vec3f(0.0),vec3f(1.0));
+ let lum=dot(col,vec3f(0.299,0.587,0.114)); col=mix(vec3f(lum),col,1.14);
+ col*=vec3f(0.98,1.02,1.05);
  col+=(hash1(uv.x*1920.7+uv.y*3411.3+fract(u.cam.w)*7.0)-0.5)*(2.2/255.0);
  return vec4f(col,1.0);}`;
 async function init(){
@@ -448,12 +505,12 @@ async function init(){
  function vbuf(g){const b=dev.createBuffer({size:g.verts.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,g.verts);return b}
  function ibuf(g){const b=dev.createBuffer({size:g.idx.byteLength,usage:GPUBufferUsage.INDEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,g.idx);return b}
  function instBuf(L){const a=L.buf();const b=dev.createBuffer({size:a.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,a);return{b,n:a.length/14}}
- const rockGeo=buildRockGeo(),cylGeo=buildCylGeo(10,true),coneGeo=buildConeGeo();
+ buildRockGeo.hi=true;const rockGeoHi=buildRockGeo();buildRockGeo.hi=false;const rockGeo=buildRockGeo(),cylGeo=buildCylGeo(10,true),coneGeo=buildConeGeo();
  const draws=[];
  function addDraw(pipeline,g,inst){const d={p:pipeline,v:vbuf(g),i:ibuf(g),n:g.idx.length,ic:1};if(inst){const ib=instBuf(inst);d.ib=ib.b;d.ic=ib.n}draws.push(d);return d}
  addDraw(pPlain,buildTerrain());
  addDraw(pPlain,buildSetPieces());
- addDraw(pInst,rockGeo,rocks); addDraw(pInst,rockGeo,foliage); addDraw(pInst,cylGeo,sponges); addDraw(pInst,coneGeo,corals); addDraw(pInst,rockGeo,cover);
+ addDraw(pInst,rockGeoHi,rocks); addDraw(pInst,rockGeo,foliage); addDraw(pInst,cylGeo,sponges); addDraw(pInst,coneGeo,corals); addDraw(pInst,rockGeo,cover);
  addDraw(pKelp,kelpInterleave(),kelp);
  addDraw(pFish,buildFishGeo(),buildSchools());
  addDraw(pManta,buildMantaGeo(),buildMantas());
