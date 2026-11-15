@@ -35,7 +35,7 @@ function groundH(x,z){
  const zc=Math.sin(x*.028)*16+Math.sin(x*.011)*8;
  const d=Math.abs(z-zc); h-=Math.exp(-(d*d)/(13*13))*6.5;           /* canyon channel */
  const x2=Math.cos(z*.021)*14, d2=Math.abs(x-x2); h-=Math.exp(-(d2*d2)/(11*11))*4.5;
- const r=Math.max(Math.abs(x),Math.abs(z)); h+=smooth(68,108,r)*26; /* rim walls hide the bound */
+ const r=Math.max(Math.abs(x),Math.abs(z)); h+=smooth(76,112,r)*26; /* rim walls hide the bound */
  h+=fbm(x*.09,z*.09)*1.4;
  return h;
 }
@@ -89,12 +89,12 @@ function buildConeGeo(){const m=new MeshBuf(),seg=7;m.p.push(0,0,0);m.n.push(0,-
  for(let i=0;i<seg;i++){m.i.push(0,1+i,2+i);m.i.push(1+i,tip,2+i)}return interleave(m)}
 /* ---- fish ---- */
 function buildFishGeo(){const m=new MeshBuf(),C=[.75,.85,.95];
- m.tri([0,0,1.1],[.28,0,0],[0,.34,-.5],[0,1,0],C,.15); m.tri([0,0,1.1],[0,.34,-.5],[-.28,0,0],[0,1,0],C,.15);
- m.tri([0,0,1.1],[0,-.34,-.5],[.28,0,0],[0,-1,0],C,.15); m.tri([0,0,1.1],[-.28,0,0],[0,-.34,-.5],[0,-1,0],C,.15);
+ m.tri([0,0,1.1],[.15,0,0],[0,.20,-.5],[0,1,0],C,.15); m.tri([0,0,1.1],[0,.34,-.5],[-.15,0,0],[0,1,0],C,.15);
+ m.tri([0,0,1.1],[0,-.20,-.5],[.28,0,0],[0,-1,0],C,.15); m.tri([0,0,1.1],[-.28,0,0],[0,-.34,-.5],[0,-1,0],C,.15);
  m.tri([.28,0,0],[0,0,-1.15],[0,.34,-.5],[1,0,0],C,.6); m.tri([-.28,0,0],[0,.34,-.5],[0,0,-1.15],[-1,0,0],C,.6);
  m.tri([.28,0,0],[0,-.34,-.5],[0,0,-1.15],[1,0,0],C,.6); m.tri([-.28,0,0],[0,0,-1.15],[0,-.34,-.5],[-1,0,0],C,.6);
- m.tri([0,.1,-1.1],[0,0,-1.15],[-.5,.05,-1.75],[0,1,0],[.5,.75,1],1); m.tri([0,.1,-1.1],[.5,.05,-1.75],[0,0,-1.15],[0,1,0],[.5,.75,1],1);
- m.tri([0,-.1,-1.1],[0,0,-1.15],[.5,-.05,-1.75],[0,-1,0],[.5,.75,1],1); m.tri([0,-.1,-1.1],[-.5,-.05,-1.75],[0,0,-1.15],[0,-1,0],[.5,.75,1],1);
+ m.tri([0,.1,-1.1],[0,0,-1.15],[-.34,.04,-1.7],[0,1,0],[.5,.75,1],1); m.tri([0,.1,-1.1],[.34,.04,-1.7],[0,0,-1.15],[0,1,0],[.5,.75,1],1);
+ m.tri([0,-.1,-1.1],[0,0,-1.15],[.34,-.04,-1.7],[0,-1,0],[.5,.75,1],1); m.tri([0,-.1,-1.1],[-.34,-.04,-1.7],[0,0,-1.15],[0,-1,0],[.5,.75,1],1);
  return interleave(m)}
 /* ---- manta ---- */
 function buildMantaGeo(){const m=new MeshBuf(),C=[.32,.38,.55];
@@ -109,26 +109,28 @@ function buildQuadGeo(){const m=new MeshBuf();m.quad([-1,-1,0],[1,-1,0],[1,1,0],
 function InstList(){this.d=[]} /* ox oy oz | sx sy sz | rotY phase spark seed | r g b  => 13 floats */
 InstList.prototype.add=function(x,y,z,sx,sy,sz,rot,r,g,b,seed){this.d.push(x,y,z,sx,sy,sz,rot,rnd()*6.28,0,seed||0,r,g,b,0)};
 InstList.prototype.buf=function(){return new Float32Array(this.d)};
-function scatterPos(minR,maxR){for(let k=0;k<40;k++){const a=rnd()*6.283,r=minR+rnd()*(maxR-minR),x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)<104&&Math.abs(z)<104)return[x,groundH(x,z),z]}return[0,groundH(0,0),0]}
+const CLEAR=[[0,36,7],[-5,8,6],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6]];
+function scatterPos(minR,maxR){for(let k=0;k<60;k++){const a=rnd()*6.283,r=minR+rnd()*(maxR-minR),x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)>104||Math.abs(z)>104)continue;let bad=false;for(const c of CLEAR){const dx=x-c[0],dz=z-c[1];if(dx*dx+dz*dz<c[2]*c[2]){bad=true;break}}if(!bad)return[x,groundH(x,z),z]}return[60,groundH(60,60),60]}
 const rocks=new InstList(),foliage=new InstList(),sponges=new InstList(),corals=new InstList(),cover=new InstList(),kelp=new InstList();
 /* canyon wall rocks + scattered boulders */
-for(let i=0;i<210;i++){const[x,y,z]=scatterPos(8,102);const s=.8+rnd()*rnd()*4.2;rocks.add(x,y-s*.25,z,s,s*(0.7+rnd()*.6),s,rnd()*6.28,.42+rnd()*.2,.40+rnd()*.18,.52+rnd()*.2)}
+for(let i=0;i<210;i++){const[x,y,z]=scatterPos(8,102);const s=.8+rnd()*rnd()*4.2;rocks.add(x,y-s*.25,z,s,s*(0.7+rnd()*.6),s,rnd()*6.28,.55+rnd()*.18,.53+rnd()*.16,.63+rnd()*.16)}
 /* floating boulders */
-for(let i=0;i<26;i++){const[x,,z]=scatterPos(15,85);const s=1+rnd()*3;rocks.add(x,2+rnd()*11,z,s,s*.8,s,rnd()*6.28,.45,.43,.55)}
+for(let i=0;i<10;i++){const[x,,z]=scatterPos(18,85);const s=.6+rnd()*1.1;rocks.add(x,10+rnd()*6,z,s,s*.8,s,rnd()*6.28,.42,.44,.52)}
 /* arch at (-27,-14): pillars + arc */
-(function(){const ax=-27,az=-14;for(let i=0;i<5;i++){const y=groundH(ax-6,az);rocks.add(ax-6,y+i*2.6-0.5,az,3.2,3,3.2,0,.44,.42,.54);rocks.add(ax+6,groundH(ax+6,az)+i*2.6-0.5,az,3.2,3,3.2,0,.44,.42,.54)}
- for(let i=0;i<=6;i++){const a=Math.PI*i/6;rocks.add(ax+Math.cos(a)*6,groundH(ax,az)+13.5+Math.sin(a)*4.4,az,3.4,2.8,3.4,a,.46,.44,.56)}})();
+(function(){const ax=-27,az=-14,gb=groundH(ax,az);
+ for(const sx of[-8,8]){const gy=groundH(ax+sx,az);for(let i=0;i<7;i++){rocks.add(ax+sx+(rnd()-.5)*.7,gy+i*2.1-0.4,az+(rnd()-.5)*1.2,1.7+rnd()*.5,1.9,1.7+rnd()*.5,rnd()*6.28,.60,.58,.66)}}
+ for(let i=0;i<=10;i++){const a=Math.PI*i/10;rocks.add(ax+Math.cos(a)*8.2,gb+14.3+Math.sin(a)*5.6,az+(rnd()-.5)*.8,1.8+rnd()*.4,1.7,1.8+rnd()*.4,rnd()*6.28,.62,.60,.68)}})();
 /* kelp forest — dense towering columns */
-for(let i=0;i<950;i++){const[x,y,z]=scatterPos(2,100);if(rnd()<.35){const[x2,y2,z2]=scatterPos(2,45);kelp.add(x2,y2-.2,z2,.9+rnd()*.7,13+rnd()*11,.9,rnd()*6.28,.2,.6,.25)}else kelp.add(x,y-.2,z,.8+rnd()*.7,10+rnd()*10,.8,rnd()*6.28,.2,.6,.25)}
+for(let i=0;i<880;i++){let p=scatterPos(2,100);if(p[1]>2)p=scatterPos(2,55);const inner=rnd()<.35;if(inner){const q=scatterPos(2,45);if(q[1]<=2)p=q}const hgt=Math.min((inner?13+rnd()*11:10+rnd()*10),20-p[1]);kelp.add(p[0],p[1]-.2,p[2],.8+rnd()*.7,hgt,.8,rnd()*6.28,.2,.6,.25)}
 /* iridescent foliage fans (squashed spheres) + magenta ground cover */
-for(let i=0;i<420;i++){const[x,y,z]=scatterPos(3,98);const s=.5+rnd()*1.5;foliage.add(x,y+s*.15,z,s,s*.45,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
-for(let i=0;i<850;i++){const[x,y,z]=scatterPos(2,100);const s=.35+rnd()*.8;cover.add(x,y+.06,z,s,s*.22,s,rnd()*6.28,.78,.16+rnd()*.15,.55+rnd()*.2)}
+for(let i=0;i<420;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*1.5;foliage.add(x,y+s*.15,z,s,s*.45,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
+for(let i=0;i<850;i++){let[x,y,z]=scatterPos(2,100);if(y>6){const q=scatterPos(2,60);x=q[0];y=q[1];z=q[2]}const s=.35+rnd()*.8;cover.add(x,y+.06,z,s,s*.22,s,rnd()*6.28,.78,.16+rnd()*.15,.55+rnd()*.2)}
 /* barrel sponges */
-for(let i=0;i<130;i++){const[x,y,z]=scatterPos(4,95);const s=.5+rnd()*.9;sponges.add(x,y,z,s,1+rnd()*1.6,s,rnd()*6.28,.85,.55+rnd()*.25,.18)}
+for(let i=0;i<130;i++){let[x,y,z]=scatterPos(4,95);if(y>6){const q=scatterPos(4,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*.9;sponges.add(x,y,z,s,1+rnd()*1.6,s,rnd()*6.28,.85,.55+rnd()*.25,.18)}
 /* coral cones clusters */
-for(let i=0;i<520;i++){const[x,y,z]=scatterPos(3,98);const s=.4+rnd()*1.1;const warm=rnd();corals.add(x,y,z,s,s*(0.8+rnd()),s,rnd()*6.28,1,.35+warm*.3,.45+warm*.25)}
+for(let i=0;i<520;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,60);x=q[0];y=q[1];z=q[2]}const s=.4+rnd()*1.1;const warm=rnd();corals.add(x,y,z,s,s*(0.8+rnd()),s,rnd()*6.28,1,.35+warm*.3,.45+warm*.25)}
 /* ============ set pieces: ship + whale fluke (one static mesh) ============ */
-function buildSetPieces(){const m=new MeshBuf(),wood=[.16,.11,.08],wood2=[.23,.16,.10],iron=[.20,.22,.26],stone=[.48,.50,.56],stone2=[.40,.42,.48];
+function buildSetPieces(){const m=new MeshBuf(),wood=[.34,.23,.13],wood2=[.44,.31,.18],iron=[.30,.33,.38],stone=[.62,.64,.70],stone2=[.52,.54,.60];
  const sx=19,sz=-30,sy=groundH(sx,sz)+1.1,ry=.7,tilt=.16;
  const L=(x,y,z)=>{const cs=Math.cos(ry),sn=Math.sin(ry);return[sx+x*cs+z*sn,sy+y+Math.sin(tilt)*x,sz-x*sn+z*cs]};
  function BX(cx,cy,cz,bx,by,bz,col){const hx=bx/2,hy=by/2,hz=bz/2;const cs=Math.cos(ry),sn=Math.sin(ry);
@@ -136,16 +138,17 @@ function buildSetPieces(){const m=new MeshBuf(),wood=[.16,.11,.08],wood2=[.23,.1
   const R=(x,y,z)=>{const y1=y*cs2-z*sn2,z1=y*sn2+z*cs2;const wx=cx+x,wy=cy+y1,wz=cz+z1;return[sx+wx*cs+wz*sn,sy+wy,sz-wx*sn+wz*cs]};
   const F=[[[-hx,-hy,hz],[hx,-hy,hz],[hx,hy,hz],[-hx,hy,hz],[0,0,1]],[[hx,-hy,-hz],[-hx,-hy,-hz],[-hx,hy,-hz],[hx,hy,-hz],[0,0,-1]],[[hx,-hy,hz],[hx,-hy,-hz],[hx,hy,-hz],[hx,hy,hz],[1,0,0]],[[-hx,-hy,-hz],[-hx,-hy,hz],[-hx,hy,hz],[-hx,hy,-hz],[-1,0,0]],[[-hx,hy,hz],[hx,hy,hz],[hx,hy,-hz],[-hx,hy,-hz],[0,1,0]],[[-hx,-hy,-hz],[hx,-hy,-hz],[hx,-hy,hz],[-hx,-hy,hz],[0,-1,0]]];
   for(const f of F)m.quad(R(...f[0]),R(...f[1]),R(...f[2]),R(...f[3]),f[4],col,0)}
- BX(0,1.2,0,16,2.2,4.6,wood); BX(-6.5,2.6,0,3,3.4,4.2,wood2); BX(6.8,2.4,0,2.4,3,4.0,wood2); BX(0,2.6,2.1,15,2.6,.35,wood2); BX(0,2.6,-2.1,15,2.6,.35,wood2);
- BX(-1,3.6,0,9,.5,3.6,wood); /* deck */
+ BX(0,0.6,0,16,3.8,4.8,wood); BX(-6.5,3.0,0,3,3.6,4.4,wood2); BX(6.8,2.8,0,2.4,3.2,4.2,wood2); BX(0,2.9,2.2,15,3.0,.35,wood2); BX(0,2.9,-2.2,15,3.0,.35,wood2);
+ BX(-1,3.2,0,9,.5,3.8,wood); /* deck */
  BX(-2,8,0,.55,9,.55,wood2); BX(3.5,6.4,.0,.45,6,.45,wood2); BX(-2,10.5,0,3.4,.3,.3,iron); /* masts */
  BX(5.5,1,3.4,2.6,1.6,1.4,iron); BX(-9.5,.6,-2.5,2,1.2,1.6,iron); /* debris */
+ BX(0,-1.6,0,13,.9,1.2,wood2); BX(8.6,1.4,0,2.6,4.4,3.4,wood); BX(-8.8,1.2,0,2.2,4.0,3.2,wood2);
  /* whale-fluke sculpture at (-9,-48) */
  const wx=-9,wz=-48,wy=groundH(wx,wz);
  m.box(wx,wy+1.2,wz,7,2.4,7,0,stone2); m.box(wx,wy+3.1,wz,4.6,1.6,4.6,.4,stone);
- m.box(wx,wy+6.4,wz,.9,5.6,.9,.2,stone); /* stalk */
- const fl=(sgn)=>{const bx=wx+sgn*2.5,bz=wz+sgn*.4;m.box(bx,wy+10.6,bz,5.6,1.1,2.6,sgn*.55,stone)};
- fl(1);fl(-1); m.box(wx,wy+9.6,wz,2.2,1.4,2.4,0,stone);
+ m.box(wx,wy+5.6,wz,2.0,5.6,2.0,.2,stone); /* stalk */
+ const fl=(sgn)=>{m.box(wx+sgn*2.6,wy+12.6,wz+sgn*.3,5.4,1.9,4.2,sgn*.5,stone);m.box(wx+sgn*6.6,wy+12.9,wz+sgn*1.6,4.8,1.5,2.9,sgn*.95,stone2)};
+ fl(1);fl(-1); m.box(wx,wy+11.2,wz,3.6,2.0,3.8,0,stone);
  /* scattered ruins / columns */
  m.box(-38,groundH(-38,18)+2.2,18,1.6,6.5,1.6,.3,stone2); m.box(-35.4,groundH(-35.4,20)+1.1,20,1.6,3.4,1.6,-.2,stone2); m.box(-36.7,groundH(-36.7,19)+4.6,19,6.4,1.3,1.8,.12,stone);
  return interleave(m)}
@@ -156,11 +159,11 @@ function buildSurface(){const m=new MeshBuf(),N=40,S=230,st=S/N;
  return interleave(m)}
 /* fish / manta / bubble / particle / shaft instance data (13-float layout reused) */
 /* instance layout (14 floats): 0-2 offset | 3-5 scale | 6 rotY/radius | 7 phase | 8 spare | 9 seed/speed | 10-12 color | 13 pad */
-function buildSchools(){const L=new InstList();const C=[[0,4.5,-16,13],[-22,6,-36,10],[26,3.5,-6,11],[8,7,-52,15]];
+function buildSchools(){const L=new InstList();const C=[[0,4.5,-16,8],[-22,6,-36,7],[26,4,-8,7],[8,7,-52,9]];
  for(let s=0;s<C.length;s++)for(let i=0;i<115;i++){const warm=s>=2&&rnd()<.3;
-  L.add(C[s][0],C[s][1],C[s][2],.55+rnd()*.5,0,0,C[s][3],warm?1:.72,warm?.45:.84,warm?.85:.97);
+  L.add(C[s][0],C[s][1],C[s][2],.30+rnd()*.18,0,0,C[s][3],warm?.95:.68,warm?.42:.78,warm?.8:.92);
   const st=L.d.length-14;L.d[st+7]=rnd()*6.283;L.d[st+9]=.22+ (i%7)*.015}return L}
-function buildMantas(){const L=new InstList();for(let i=0;i<5;i++){L.add(0,8.5,-26,2.4+rnd()*1.5,0,0,24+rnd()*10,.3,.36,.52);const st=L.d.length-14;L.d[st+7]=i*1.7;L.d[st+9]=.045+rnd()*.025}return L}
+function buildMantas(){const L=new InstList();const C=[[0,11,-30],[-25,13,-45],[20,12,-15],[-10,14,-60],[15,10,-48]];for(let i=0;i<5;i++){L.add(C[i][0],C[i][1],C[i][2],1.3+rnd()*.6,0,0,13+rnd()*8,.16,.20,.30);const st=L.d.length-14;L.d[st+7]=i*1.7;L.d[st+9]=.05+rnd()*.02}return L}
 function buildBubbles(){const L=new InstList();for(let i=0;i<320;i++){const p=i<70?[19+(rnd()-.5)*8,groundH(19,-30)+1,-30+(rnd()-.5)*8]:scatterPos(3,95);L.add(p[0],p[1],p[2],.10+rnd()*.22,0,0,20,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+8]=1;L.d[st+9]=.5+rnd()*1.1}return L}
 function buildParticles(){const L=new InstList();for(let i=0;i<900;i++){const[x,,z]=scatterPos(0,100);L.add(x,-8+rnd()*26,z,.03+rnd()*.07,0,0,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+9]=rnd()}return L}
 function buildShafts(){const L=new InstList();const spots=[[-6,-8],[10,-30],[-24,-32],[4,-52],[22,-16],[-14,8]];for(const sp of spots){L.add(sp[0],10,sp[1],3.5+rnd()*3,26,1,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28}return L}
@@ -168,8 +171,8 @@ function buildShafts(){const L=new InstList();const spots=[[-6,-8],[10,-30],[-24
 const canvas=document.getElementById('c'),hud=document.getElementById('hud'),uiEl=document.getElementById('ui');
 const Q=new URLSearchParams(location.search);
 const POSES=[
- [[0,3,36],[0,-1,-12]], [[-5,-.5,8],[-12,-2,-22]], [[-40,3,6],[-26,2,-14]],
- [[33,3,-10],[17,-3,-30]], [[7,4,-27],[-9,2,-48]], [[16,-3,-38],[-6,14,-58]]];
+ [[0,2,36],[0,-4,-12]], [[-5,-.5,8],[-12,-2,-22]], [[-27,3,10],[-27,2,-16]],
+ [[33,0,-24],[19,-4,-30]], [[2,4,-32],[-9,5,-48]], [[16,-3,-38],[-6,14,-58]]];
 const cam={p:new Float32Array([0,3,36]),yaw:Math.PI,pitch:-.04};
 let poseIdx=Q.has('pose')?+Q.get('pose'):0;
 if(Q.has('pose')){const P=POSES[poseIdx%6];cam.p.set(P[0]);const dx=P[1][0]-P[0][0],dy=P[1][1]-P[0][1],dz=P[1][2]-P[0][2];cam.yaw=Math.atan2(-dx,-dz);cam.pitch=Math.atan2(dy,Math.hypot(dx,dz))}
@@ -197,16 +200,16 @@ window.__PERF__=null;window.__READY__=false;
 const SUN=[0.34,0.86,0.38];{const l=Math.hypot(...SUN);SUN[0]/=l;SUN[1]/=l;SUN[2]/=l}
 const COMMON=`
 struct U{vp:mat4x4f,cam:vec4f,sun:vec4f,rgt:vec4f,up:vec4f,misc:vec4f};
-@group(0) @binding(0) var<uniform> U:U;
+@group(0) @binding(0) var<uniform> u:U;
 fn hash1(n:f32)->f32{return fract(sin(n)*43758.5453);}
 fn caust(p:vec2f,t:f32)->f32{
  var q=p*0.42; var v=0.0;
  let a=sin(q.x*1.31+t*0.9)+sin(q.y*1.13-t*0.7)+sin((q.x+q.y)*0.71+t*0.5);
  let b=sin(q.x*0.83-t*0.6)+sin(q.y*1.47+t*0.8)+sin((q.x-q.y)*0.93-t*0.4);
- v=pow(clamp(1.0-abs(a*b)*0.28,0.0,1.0),6.0);
+ v=pow(clamp(1.0-abs(a*b)*0.28,0.0,1.0),4.0);
  return v;}
 fn fogMix(col:vec3f,wp:vec3f)->vec3f{
- let d=length(wp-U.cam.xyz);
+ let d=length(wp-u.cam.xyz);
  let depthT=clamp((22.0-wp.y)/46.0,0.0,1.0);
  var fc=mix(vec3f(0.075,0.42,0.50),vec3f(0.003,0.045,0.185),depthT);
  fc=mix(fc,vec3f(0.01,0.09,0.28),clamp(d/140.0,0.0,1.0)*0.65);
@@ -214,18 +217,18 @@ fn fogMix(col:vec3f,wp:vec3f)->vec3f{
  let absorbed=col*exp(-d*vec3f(0.016,0.004,0.0015));
  return mix(absorbed,fc,clamp(f,0.0,1.0));}
 fn lightCalc(col:vec3f,n:vec3f,wp:vec3f,causticAmt:f32)->vec3f{
- let ndl=max(dot(n,U.sun.xyz),0.0);
- let amb=mix(vec3f(0.05,0.13,0.24),vec3f(0.16,0.38,0.44),n.y*0.5+0.5);
+ let ndl=max(dot(n,u.sun.xyz),0.0);
+ let amb=mix(vec3f(0.08,0.20,0.34),vec3f(0.24,0.52,0.58),n.y*0.5+0.5);
  var c=col*(amb+vec3f(0.55,0.62,0.55)*ndl*0.85);
- if(n.y>0.45){c+=vec3f(0.35,0.75,0.72)*caust(wp.xz,U.cam.w)*causticAmt*(0.35+0.65*ndl);}
- let vd=normalize(U.cam.xyz-wp); let fr=pow(1.0-max(dot(n,vd),0.0),3.0);
+ if(n.y>0.45){c+=vec3f(0.32,0.68,0.64)*caust(wp.xz*0.55,u.cam.w)*causticAmt*(0.35+0.65*ndl);}
+ let vd=normalize(u.cam.xyz-wp); let fr=pow(1.0-max(dot(n,vd),0.0),3.0);
  c+=fr*vec3f(0.05,0.25,0.30);
  return c;}
 `;
 const VS_PLAIN=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32)->O{
- var o:O; o.wp=p; o.n=n; o.col=c; o.pos=U.vp*vec4f(p,1.0); return o;}`;
+ var o:O; o.wp=p; o.n=n; o.col=c; o.pos=u.vp*vec4f(p,1.0); return o;}`;
 const VS_INST=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) ph:f32};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
@@ -233,101 +236,102 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f
  let cs=cos(dat.x); let sn=sin(dat.x);
  let lp=p*scl; let rp=vec3f(lp.x*cs+lp.z*sn,lp.y,-lp.x*sn+lp.z*cs);
  let rn=vec3f(n.x*cs+n.z*sn,n.y,-n.x*sn+n.z*cs);
- var o:O; o.wp=off+rp; o.n=rn; o.col=icol; o.ph=dat.y; o.pos=U.vp*vec4f(o.wp,1.0); return o;}`;
+ var o:O; o.wp=off+rp; o.n=rn; o.col=icol; o.ph=dat.y; o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_LIT=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f)->@location(0) vec4f{
- let nn=normalize(n); var c=lightCalc(col,nn,wp,0.55);
+ let nn=normalize(n); var c=lightCalc(col,nn,wp,0.5);
  return vec4f(fogMix(c,wp),1.0);}`;
 const FS_LIT_I=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) ph:f32)->@location(0) vec4f{
  let nn=normalize(n); var c=lightCalc(col,nn,wp,0.4);
- let vd=normalize(U.cam.xyz-wp); let fr=pow(1.0-abs(dot(nn,vd)),2.0);
- c+=fr*mix(vec3f(0.30,0.05,0.38),vec3f(0.05,0.35,0.42),sin(ph+U.cam.w*0.3)*0.5+0.5)*0.8;
+ let vd=normalize(u.cam.xyz-wp); let fr=pow(1.0-abs(dot(nn,vd)),2.0);
+ c+=fr*mix(vec3f(0.30,0.05,0.38),vec3f(0.05,0.35,0.42),sin(ph+u.cam.w*0.3)*0.5+0.5)*0.38;
  return vec4f(fogMix(c,wp),1.0);}`;
 const VS_KELP=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
- let h=b; let t=U.cam.w;
+ let h=b; let t=u.cam.w;
  let sway=(sin(t*0.85+dat.y+h*2.1)+0.5*sin(t*1.7+dat.y*1.3+h*3.7))*0.85*h*h;
  let cs=cos(dat.x); let sn=sin(dat.x);
  var lp=vec3f(p.x*scl.x+sway, h*scl.y, p.z+sway*0.35);
  let rp=vec3f(lp.x*cs+lp.z*sn,lp.y,-lp.x*sn+lp.z*cs);
- var o:O; o.wp=off+rp; o.h=h; o.ph=dat.y; o.side=p.x; o.pos=U.vp*vec4f(o.wp,1.0); return o;}`;
+ var o:O; o.wp=off+rp; o.h=h; o.ph=dat.y; o.side=p.x; o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_KELP=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32)->@location(0) vec4f{
  var base=mix(vec3f(0.015,0.16,0.05),vec3f(0.10,0.48,0.13),h);
  base=mix(base,vec3f(0.45,0.55,0.10),pow(h,3.0)*0.7);
  let vein=0.85+0.3*sin(h*46.0+ph);
- var c=base*vein*(0.35+0.75*max(U.sun.y,0.0));
- let glint=step(0.985,hash1(floor(h*44.0)*7.1+floor(ph*10.0)+floor(U.cam.w*2.2)*13.7));
- c+=glint*vec3f(0.9,0.85,0.35)*1.6;
- let spark=step(0.992,hash1(floor(h*90.0)*3.3+floor(ph*23.0)+floor(U.cam.w*3.0)*7.9));
- c+=spark*vec3f(0.4,1.0,0.55)*1.4;
+ base*=0.70+0.55*clamp(1.0-abs(side)/(0.60*(1.0-h*0.45)),0.0,1.0);
+ var c=base*vein*(0.35+0.75*max(u.sun.y,0.0));
+ let glint=step(0.993,hash1(floor(h*64.0)*7.1+floor((side+0.6)*6.0)*3.7+floor(ph*10.0)+floor(u.cam.w*2.2)*13.7));
+ c+=glint*vec3f(0.9,0.82,0.32)*1.1*(0.5+0.5*h);
+ let spark=step(0.996,hash1(floor(h*110.0)*3.3+floor((side+0.6)*9.0)*5.1+floor(ph*23.0)+floor(u.cam.w*3.0)*7.9));
+ c+=spark*vec3f(0.35,0.9,0.45)*0.7;
  c+=vec3f(0.02,0.10,0.06)*(1.0-h);
  return vec4f(fogMix(c,wp),1.0);}`;
 const VS_FISH=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) lz:f32};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
- let t=U.cam.w; let ang=dat.y+t*dat.w; let R=dat.x;
+ let t=u.cam.w; let ang=dat.y+t*dat.w; let R=dat.x;
  let ctr=vec3f(off.x+cos(ang)*R, off.y+sin(dat.y*7.0+t*0.6)*1.1+sin(ang*2.0)*0.35, off.z+sin(ang)*R*0.78);
  let fwd=normalize(vec3f(-sin(ang),0.0,cos(ang)*0.78));
  let rgt=normalize(cross(vec3f(0.0,1.0,0.0),fwd)); let up2=cross(fwd,rgt);
  let wag=sin(t*9.0+dat.y*17.0)*b*0.38;
  let lp=vec3f(p.x+wag,p.y,p.z)*scl.x;
  let wp=ctr+rgt*lp.x+up2*lp.y+fwd*lp.z;
- var o:O; o.wp=wp; o.n=rgt*n.x+up2*n.y+fwd*n.z; o.col=icol; o.lz=p.z; o.pos=U.vp*vec4f(wp,1.0); return o;}`;
+ var o:O; o.wp=wp; o.n=rgt*n.x+up2*n.y+fwd*n.z; o.col=icol; o.lz=p.z; o.pos=u.vp*vec4f(wp,1.0); return o;}`;
 const FS_FISH=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) lz:f32)->@location(0) vec4f{
  let nn=normalize(n); var c=lightCalc(col,nn,wp,0.0);
  c*=0.8+0.35*sin(lz*5.0);
- let vd=normalize(U.cam.xyz-wp); c+=pow(1.0-abs(dot(nn,vd)),2.0)*vec3f(0.25,0.4,0.45);
+ let vd=normalize(u.cam.xyz-wp); c+=pow(1.0-abs(dot(nn,vd)),2.0)*vec3f(0.25,0.4,0.45);
  return vec4f(fogMix(c,wp),1.0);}`;
 const VS_MANTA=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
- let t=U.cam.w; let ang=dat.y+t*dat.w; let R=dat.x;
+ let t=u.cam.w; let ang=dat.y+t*dat.w; let R=dat.x;
  let ctr=vec3f(off.x+cos(ang)*R, off.y+sin(t*0.23+dat.y)*1.6, off.z+sin(ang)*R*0.8);
  let fwd=normalize(vec3f(-sin(ang),0.05,cos(ang)*0.8));
  let rgt=normalize(cross(vec3f(0.0,1.0,0.0),fwd)); let up2=cross(fwd,rgt);
- let flap=sin(t*1.5+dat.y*3.0)*b*b*1.5;
+ let flap=sin(t*1.5+dat.y*3.0)*b*b*0.9;
  let lp=vec3f(p.x,p.y+flap,p.z)*scl.x;
  let wp=ctr+rgt*lp.x+up2*lp.y+fwd*lp.z;
- var o:O; o.wp=wp; o.n=up2; o.col=icol; o.pos=U.vp*vec4f(wp,1.0); return o;}`;
+ var o:O; o.wp=wp; o.n=rgt*n.x+up2*n.y+fwd*n.z; o.col=icol; o.pos=u.vp*vec4f(wp,1.0); return o;}`;
 const VS_SURF=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) uv2:vec2f};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32)->O{
- let t=U.cam.w; var wp=p;
+ let t=u.cam.w; var wp=p;
  wp.y+=sin(p.x*0.24+t*1.1)*0.45+cos(p.z*0.31+t*0.8)*0.4+sin((p.x+p.z)*0.11+t*0.5)*0.5;
- var o:O; o.wp=wp; o.uv2=c.xy; o.pos=U.vp*vec4f(wp,1.0); return o;}`;
+ var o:O; o.wp=wp; o.uv2=c.xy; o.pos=u.vp*vec4f(wp,1.0); return o;}`;
 const FS_SURF=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) uv2:vec2f,@builtin(front_facing) ff:bool)->@location(0) vec4f{
- let t=U.cam.w;
- let w1=caust(wp.xz*1.4,t*1.3); let w2=caust(wp.xz*3.1+7.0,t*1.7);
- var c=mix(vec3f(0.05,0.42,0.52),vec3f(0.35,0.85,0.88),w1*0.7+w2*0.45);
- let vd=normalize(wp-U.cam.xyz); let sd=max(dot(vd,U.sun.xyz),0.0);
+ let t=u.cam.w;
+ let w1=caust(wp.xz*0.8,t*1.3); let w2=caust(wp.xz*1.9+7.0,t*1.7);
+ var c=mix(vec3f(0.03,0.27,0.39),vec3f(0.30,0.72,0.78),w1*0.40+w2*0.22)+vec3f(0.02,0.05,0.05);
+ let vd=normalize(wp-u.cam.xyz); let sd=max(dot(vd,u.sun.xyz),0.0);
  c+=vec3f(0.9,0.95,0.8)*pow(sd,18.0)*1.4;
  c+=vec3f(0.5,0.8,0.85)*pow(sd,3.0)*0.35;
- let d=length(wp-U.cam.xyz); let f=1.0-exp(-d*0.010);
+ let d=length(wp-u.cam.xyz); let f=1.0-exp(-d*0.010);
  c=mix(c,vec3f(0.01,0.09,0.28),f*0.55);
  return vec4f(c,0.94);}`;
 const VS_QUAD=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) loc:vec2f,@location(2) dat:vec4f,@location(3) rise:f32};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
- let t=U.cam.w; var o:O; o.dat=dat; o.loc=c.xy;
+ let t=u.cam.w; var o:O; o.dat=dat; o.loc=c.xy;
  if(dat.z>0.5){ let fr=fract(t*dat.w/dat.x+dat.y*0.159); o.rise=fr;
    let ctr=vec3f(off.x+sin(t*2.6+dat.y)*0.25, off.y+fr*dat.x, off.z+cos(t*2.2+dat.y)*0.2);
-   let sz=scl.x*(0.7+fr*0.9); o.wp=ctr+(U.rgt.xyz*p.x+U.up.xyz*p.y)*sz;
+   let sz=scl.x*(0.7+fr*0.9); o.wp=ctr+(u.rgt.xyz*p.x+u.up.xyz*p.y)*sz;
  } else { o.rise=0.0;
    let dr=vec3f(sin(t*0.11+dat.y*3.0+dat.w*9.0),sin(t*0.07+dat.y*5.0)*0.6,cos(t*0.09+dat.y*2.0));
-   o.wp=off+dr*1.4+(U.rgt.xyz*p.x+U.up.xyz*p.y)*scl.x; }
- o.pos=U.vp*vec4f(o.wp,1.0); return o;}`;
+   o.wp=off+dr*1.4+(u.rgt.xyz*p.x+u.up.xyz*p.y)*scl.x; }
+ o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_QUAD=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) loc:vec2f,@location(2) dat:vec4f,@location(3) rise:f32)->@location(0) vec4f{
- let d=length(loc); let fogF=exp(-length(wp-U.cam.xyz)*0.012);
+ let d=length(loc); let fogF=exp(-length(wp-u.cam.xyz)*0.012);
  if(dat.z>0.5){ let ring=smoothstep(0.42,0.95,d)*(1.0-smoothstep(0.95,1.0,d));
    let hl=smoothstep(0.35,0.0,length(loc-vec2f(-0.32,0.36)));
    let a=(ring*0.55+hl*0.7)*fogF*(1.0-rise*0.35);
@@ -340,29 +344,29 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) loc:vec
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
  var o:O; o.loc=c.xy; o.ph=dat.y;
  let lx=p.x*scl.x; let ly=(p.y*0.5+0.5)*scl.y;
- o.wp=vec3f(off.x+U.rgt.x*lx - ly*0.30, off.y-ly+13.0, off.z+U.rgt.z*lx - ly*0.33);
- o.pos=U.vp*vec4f(o.wp,1.0); return o;}`;
+ o.wp=vec3f(off.x+u.rgt.x*lx - ly*0.30, off.y-ly+13.0, off.z+u.rgt.z*lx - ly*0.33);
+ o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_SHAFT=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) loc:vec2f,@location(2) ph:f32)->@location(0) vec4f{
  let ex=1.0-abs(loc.x); let ey=loc.y*0.5+0.5;
- let flick=0.6+0.4*sin(U.cam.w*0.7+ph+loc.x*6.0);
+ let flick=0.6+0.4*sin(u.cam.w*0.7+ph+loc.x*6.0);
  let a=pow(ex,2.6)*(1.0-ey)*(0.35+0.65*ey)*0.16*flick;
- let d=length(wp-U.cam.xyz); let a2=a*exp(-d*0.008);
+ let d=length(wp-u.cam.xyz); let a2=a*exp(-d*0.008);
  if(a2<0.003){discard;} return vec4f(vec3f(0.45,0.85,0.9),a2);}`;
 const VS_POST=`
 struct U2{vp:mat4x4f,cam:vec4f,sun:vec4f,rgt:vec4f,up:vec4f,misc:vec4f};
-@group(0) @binding(0) var<uniform> U:U2;
+@group(0) @binding(0) var<uniform> u:U2;
 struct O{@builtin(position) pos:vec4f,@location(0) uv:vec2f};
-@vertex fn main(@builtin(vertex_index) i:u32)->O{var o:O;let x=f32((i<<1u)&2u);let y=f32(i&2u);o.pos=vec4f(x*2.0-1.0,1.0-y*2.0,0.0,1.0);o.uv=vec2f(x,1.0-y);return o;}`;
+@vertex fn main(@builtin(vertex_index) i:u32)->O{var o:O;let x=f32((i<<1u)&2u);let y=f32(i&2u);o.pos=vec4f(x*2.0-1.0,1.0-y*2.0,0.0,1.0);o.uv=vec2f(x,y*0.5);return o;}`;
 const FS_POST=`
 struct U2{vp:mat4x4f,cam:vec4f,sun:vec4f,rgt:vec4f,up:vec4f,misc:vec4f};
-@group(0) @binding(0) var<uniform> U:U2;
+@group(0) @binding(0) var<uniform> u:U2;
 @group(0) @binding(1) var tex:texture_2d<f32>;
 @group(0) @binding(2) var smp:sampler;
 fn hash1(n:f32)->f32{return fract(sin(n)*43758.5453);}
 @fragment fn main(@location(0) uv:vec2f)->@location(0) vec4f{
  var col=textureSample(tex,smp,uv).rgb;
- let sunUv=U.misc.xy; let inten=U.misc.z;
+ let sunUv=u.misc.xy; let inten=u.misc.z;
  if(inten>0.001){ let dir=sunUv-uv; let dist=length(dir); let stepv=dir/22.0;
    var acc=vec3f(0.0); var w=1.0; var p=uv;
    for(var i=0;i<22;i++){ p+=stepv; let s=textureSample(tex,smp,p).rgb;
@@ -370,7 +374,7 @@ fn hash1(n:f32)->f32{return fract(sin(n)*43758.5453);}
    col+=acc*0.055*inten*exp(-dist*1.4)*vec3f(0.6,0.95,1.05); }
  let vg=1.0-0.32*pow(length((uv-0.5)*vec2f(1.15,1.3)),2.2);
  col*=vg; col=pow(col,vec3f(0.985)); col*=vec3f(0.97,1.03,1.06);
- col+=(hash1(uv.x*1920.7+uv.y*3411.3+fract(U.cam.w)*7.0)-0.5)*(2.2/255.0);
+ col+=(hash1(uv.x*1920.7+uv.y*3411.3+fract(u.cam.w)*7.0)-0.5)*(2.2/255.0);
  return vec4f(col,1.0);}`;
 async function init(){
  if(!navigator.gpu)throw new Error("WebGPU is not available in this browser.");
@@ -402,12 +406,12 @@ async function init(){
  const pSurf=pipe(VS_SURF,FS_SURF,[meshLayout],ALPHA,false);
  const pQuad=pipe(VS_QUAD,FS_QUAD,[meshLayout,instLayout],ALPHA,false);
  const pShaft=pipe(VS_SHAFT,FS_SHAFT,[meshLayout,instLayout],ADD,false);
- function vbuf(g){const b=dev.createBuffer({size:g.verts.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,g.verts);return b}
- function ibuf(g){const b=dev.createBuffer({size:g.idx.byteLength,usage:GPUBufferUsage.INDEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,g.idx);return b}
- function instBuf(L){const a=L.buf();const b=dev.createBuffer({size:a.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,a);return{b,n:a.length/14}}
+ function vbuf(g){const b=dev.createBuffer({size:g.verts.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,g.verts);return b}
+ function ibuf(g){const b=dev.createBuffer({size:g.idx.byteLength,usage:GPUBufferUsage.INDEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,g.idx);return b}
+ function instBuf(L){const a=L.buf();const b=dev.createBuffer({size:a.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,a);return{b,n:a.length/14}}
  const rockGeo=buildRockGeo(),cylGeo=buildCylGeo(10,true),coneGeo=buildConeGeo();
  const draws=[];
- function addDraw(pipeline,g,inst){const d={p:pipeline,v:vbuf(g),i:ibuf(g),n:g.idx.length};if(inst){const ib=instBuf(inst);d.ib=ib.b;d.ic=ib.n}draws.push(d);return d}
+ function addDraw(pipeline,g,inst){const d={p:pipeline,v:vbuf(g),i:ibuf(g),n:g.idx.length,ic:1};if(inst){const ib=instBuf(inst);d.ib=ib.b;d.ic=ib.n}draws.push(d);return d}
  addDraw(pPlain,buildTerrain());
  addDraw(pPlain,buildSetPieces());
  addDraw(pInst,rockGeo,rocks); addDraw(pInst,rockGeo,foliage); addDraw(pInst,cylGeo,sponges); addDraw(pInst,coneGeo,corals); addDraw(pInst,rockGeo,cover);
@@ -425,12 +429,15 @@ async function init(){
   fragment:{module:dev.createShaderModule({code:FS_POST}),entryPoint:"main",targets:[{format:fmt}]},
   primitive:{topology:"triangle-list"}});
  const sampler=dev.createSampler({magFilter:"linear",minFilter:"linear"});
- let colorTex=null,colorMSAA=null,depthTex=null,postBg=null,W=0,H=0;
+ let colorTex=null,colorMSAA=null,depthTex=null,postBg=null,W=0,H=0,postTex=null;
+ const capMode=Q.has("cap"); let capDone=false;
  function resize(){const qw=Q.get("w"),qh=Q.get("h");
   W=qw?+qw:Math.floor(innerWidth*Math.min(devicePixelRatio||1,2)); H=qh?+qh:Math.floor(innerHeight*Math.min(devicePixelRatio||1,2));
   canvas.width=W;canvas.height=H;
   ctx.configure({device:dev,format:fmt,alphaMode:"opaque"});
   if(colorTex)colorTex.destroy(); if(colorMSAA)colorMSAA.destroy(); if(depthTex)depthTex.destroy();
+  if(postTex)postTex.destroy();
+  postTex=dev.createTexture({size:[W,H],format:fmt,usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.COPY_SRC});
   colorTex=dev.createTexture({size:[W,H],format:"rgba16float",usage:GPUTextureUsage.RENDER_ATTACHMENT|GPUTextureUsage.TEXTURE_BINDING});
   colorMSAA=dev.createTexture({size:[W,H],format:"rgba16float",sampleCount:4,usage:GPUTextureUsage.RENDER_ATTACHMENT});
   depthTex=dev.createTexture({size:[W,H],format:depthFmt,sampleCount:4,usage:GPUTextureUsage.RENDER_ATTACHMENT});
@@ -444,7 +451,7 @@ async function init(){
  let frames=0,lastHud=0,lastT=performance.now(),accMs=0,accN=0,worst=0;
  function frame(nowMs){
   requestAnimationFrame(frame);
-  const now=nowMs*0.001; let dt=Math.min(now-(frame._pt||now),0.05); frame._pt=now;
+  const now=Q.has('freeze')?+Q.get('freeze'):nowMs*0.001; let dt=Math.min(now-(frame._pt||now),0.05); frame._pt=now;
   const t0=performance.now();
   /* camera */
   if(flyMode){flyT+=dt;const T=60,ph=(flyT%T)/T*FLYPTS.length,seg=Math.floor(ph),fr=ph-seg;
@@ -480,17 +487,18 @@ async function init(){
   let vx=_v[0]*sx2+_v[4]*sy2+_v[8]*sz2+_v[12],vy=_v[1]*sx2+_v[5]*sy2+_v[9]*sz2+_v[13],vz=_v[2]*sx2+_v[6]*sy2+_v[10]*sz2+_v[14];
   let cw=-vz,su=0,sv=0,si=0;
   if(cw>1){const px=_pr[0]*vx,py=_pr[5]*vy;su=px/cw*0.5+0.5;sv=py/cw*0.5+0.5;si=clamp(1.2-Math.hypot(su-.5,sv-.5)*1.1,0,1)*clamp(_fwd[1]*0.5+0.75,0.15,1)}
-  _u[32]=su;_u[33]=sv;_u[34]=si;_u[35]=W/H;
+  _u[32]=su;_u[33]=1.0-sv;_u[34]=si;_u[35]=W/H;
   dev.queue.writeBuffer(ubuf,0,_u.buffer,0,144);
   const enc=dev.createCommandEncoder();
   const tsWrites=qs?{querySet:qs,beginningOfPassWriteIndex:0,endOfPassWriteIndex:1}:undefined;
   const pass=enc.beginRenderPass({colorAttachments:[{view:colorMSAA.createView(),resolveTarget:colorTex.createView(),loadOp:"clear",clearValue:{r:0.004,g:0.05,b:0.19,a:1},storeOp:"discard"}],
    depthStencilAttachment:{view:depthTex.createView(),depthLoadOp:"clear",depthClearValue:1,depthStoreOp:"discard"},timestampWrites:tsWrites});
   pass.setBindGroup(0,bg);
-  for(let i=0;i<10;i++){const d=draws[i];pass.setPipeline(d.p);pass.setVertexBuffer(0,d.v);if(d.ib)pass.setVertexBuffer(1,d.ib);pass.setIndexBuffer(d.i,"uint32");pass.drawIndexed(d.n,d.ic||0)}
+  const skipSet=new Set((Q.get('skip')||'').split(',').filter(x=>x!=='').map(Number));
+  for(let i=0;i<10;i++){if(skipSet.has(i))continue;const d=draws[i];pass.setPipeline(d.p);pass.setVertexBuffer(0,d.v);if(d.ib)pass.setVertexBuffer(1,d.ib);pass.setIndexBuffer(d.i,"uint32");pass.drawIndexed(d.n,d.ic)}
   /* surface, shafts, bubbles, particles */
   const tr=[surfDraw,shaftDraw,bubDraw,parDraw];
-  for(const d of tr){pass.setPipeline(d.p);pass.setVertexBuffer(0,d.v);if(d.ib)pass.setVertexBuffer(1,d.ib);pass.setIndexBuffer(d.i,"uint32");pass.drawIndexed(d.n,d.ic||0)}
+  for(const d of tr){pass.setPipeline(d.p);pass.setVertexBuffer(0,d.v);if(d.ib)pass.setVertexBuffer(1,d.ib);pass.setIndexBuffer(d.i,"uint32");pass.drawIndexed(d.n,d.ic)}
   pass.end();
   let doRead=false;
   if(qs){enc.resolveQuerySet(qs,0,2,qsRes,0); if(!qsBusy&&frames%90===0){doRead=true;qsBusy=true;enc.copyBufferToBuffer(qsRes,0,qsRead,0,16)}}
@@ -498,9 +506,20 @@ async function init(){
   if(doRead){qsRead.mapAsync(GPUMapMode.READ).then(()=>{const a=new BigUint64Array(qsRead.getMappedRange());const ms=Number(a[1]-a[0])/1e6;if(ms>0&&ms<100)gpuMs=ms;qsRead.unmap();qsBusy=false}).catch(()=>{qsBusy=false})}
   /* post pass (separate encoder) */
   const encP=dev.createCommandEncoder();
-  const pp=encP.beginRenderPass({colorAttachments:[{view:ctx.getCurrentTexture().createView(),loadOp:"clear",clearValue:{r:0,g:0,b:0,a:1},storeOp:"store"}]});
+  const pp=encP.beginRenderPass({colorAttachments:[{view:capMode?postTex.createView():ctx.getCurrentTexture().createView(),loadOp:"clear",clearValue:{r:0,g:0,b:0,a:1},storeOp:"store"}]});
   pp.setBindGroup(0,postBg); pp.setPipeline(postPipe); pp.draw(3); pp.end();
   dev.queue.submit([encP.finish()]);
+  if(capMode&&!capDone&&(Q.has('flycap')?flyT>+(Q.get('flycap')):frames>8)){capDone=true;
+   const bpr=Math.ceil(W*4/256)*256, cbuf=dev.createBuffer({size:bpr*H,usage:GPUBufferUsage.COPY_DST|GPUBufferUsage.MAP_READ});
+   const e2=dev.createCommandEncoder(); e2.copyTextureToBuffer({texture:postTex}, {buffer:cbuf,bytesPerRow:bpr,rowsPerImage:H}, [W,H]); dev.queue.submit([e2.finish()]);
+   cbuf.mapAsync(GPUMapMode.READ).then(()=>{const src=new Uint8Array(cbuf.getMappedRange()), bgra=fmt.indexOf("bgra")>=0;
+    const sc=1280/W, dw=1280, dh=Math.round(H*sc), cv=document.createElement("canvas"); cv.width=dw; cv.height=dh;
+    const g2=cv.getContext("2d"), img=g2.createImageData(dw,dh), dst=img.data;
+    for(let y=0;y<dh;y++){const sy=Math.floor(y/sc); for(let x=0;x<dw;x++){const sx=Math.floor(x/sc), si=sy*bpr+sx*4, di=(y*dw+x)*4;
+     dst[di]=src[si+(bgra?2:0)]; dst[di+1]=src[si+1]; dst[di+2]=src[si+(bgra?0:2)]; dst[di+3]=255;}}
+    g2.putImageData(img,0,0); const im=new Image(); im.id="capimg"; im.src=cv.toDataURL("image/png");
+    im.style.cssText="position:fixed;inset:0;width:100%;height:100%"; document.body.appendChild(im);
+    uiEl.style.display="none"; hud.style.display="none"; window.__CAP__=true; cbuf.unmap();}).catch(e=>{hud.textContent="cap fail "+e.message});}
   frames++; window.__READY__=frames>5;
   const ms=performance.now()-t0; accMs+=ms;accN++; if(ms>worst)worst=ms;
   if(now-lastHud>0.25){lastHud=now;const avg=accMs/Math.max(accN,1);accMs=0;accN=0;
