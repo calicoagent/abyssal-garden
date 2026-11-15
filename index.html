@@ -35,7 +35,7 @@ function groundH(x,z){
  const zc=Math.sin(x*.028)*16+Math.sin(x*.011)*8;
  const d=Math.abs(z-zc); h-=Math.exp(-(d*d)/(13*13))*6.5;           /* canyon channel */
  const x2=Math.cos(z*.021)*14, d2=Math.abs(x-x2); h-=Math.exp(-(d2*d2)/(11*11))*4.5;
- const r=Math.max(Math.abs(x),Math.abs(z)); h+=smooth(76,112,r)*26; /* rim walls hide the bound */
+ const r=Math.max(Math.abs(x),Math.abs(z)); h+=smooth(76,112,r)*26*(0.66+0.28*fbm(x*.03+31.7,z*.03+11.2))*(0.55+0.5*fbm(x*.09+3.1,z*.09+8.7)); /* rim: jagged fog range, no shelf line */
  h+=fbm(x*.09,z*.09)*1.4;
  return h;
 }
@@ -51,7 +51,7 @@ MeshBuf.prototype.box=function(cx,cy,cz,sx,sy,sz,ry,col){const hx=sx/2,hy=sy/2,h
  for(const f of F){const n=[f[4][0]*cs+f[4][2]*sn,f[4][1],-f[4][0]*sn+f[4][2]*cs];this.quad(R(...f[0]),R(...f[1]),R(...f[2]),R(...f[3]),n,col,0)}};
 function interleave(m){const n=m.v,out=new Float32Array(n*10);for(let i=0;i<n;i++){out[i*10]=m.p[i*3];out[i*10+1]=m.p[i*3+1];out[i*10+2]=m.p[i*3+2];out[i*10+3]=m.n[i*3];out[i*10+4]=m.n[i*3+1];out[i*10+5]=m.n[i*3+2];out[i*10+6]=m.c[i*3];out[i*10+7]=m.c[i*3+1];out[i*10+8]=m.c[i*3+2];out[i*10+9]=m.b[i]}return{verts:out,idx:new Uint32Array(m.i)}}
 /* ---- terrain ---- */
-function buildTerrain(){const m=new MeshBuf(),N=150,S=300,st=S/N;
+function buildTerrain(){const m=new MeshBuf(),N=150,S=460,st=S/N;
  for(let j=0;j<=N;j++)for(let i=0;i<=N;i++){const x=-S/2+i*st,z=-S/2+j*st,y=groundH(x,z);
   const e=.9,nx=groundH(x-e,z)-groundH(x+e,z),nz=groundH(x,z-e)-groundH(x,z+e);let ny=2*e;const il=1/Math.hypot(nx,ny,nz);
   const sand=smooth(-13,-6,y),rocky=smooth(.35,.75,fbm(x*.05+31,z*.05+17));
@@ -67,7 +67,7 @@ function buildRockGeo(){const t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-
  const mid={};function mp(a,b){const k=a<b?a*100+b:b*100+a;if(mid[k]!==undefined)return mid[k];const A=V[a],B=V[b];V.push([(A[0]+B[0])/2,(A[1]+B[1])/2,(A[2]+B[2])/2]);return mid[k]=V.length-1}
  let NF=[];for(const f of F){const ab=mp(f[0],f[1]),bc=mp(f[1],f[2]),ca=mp(f[2],f[0]);NF.push([f[0],ab,ca],[f[1],bc,ab],[f[2],ca,bc],[ab,bc,ca])}
  if(buildRockGeo.hi){const N2=[];for(const f of NF){const ab=mp(f[0],f[1]),bc=mp(f[1],f[2]),ca=mp(f[2],f[0]);N2.push([f[0],ab,ca],[f[1],bc,ab],[f[2],ca,bc],[ab,bc,ca])}NF=N2}
- const m=new MeshBuf();for(let i=0;i<V.length;i++){const v=V[i],l=Math.hypot(...v),d=1+ (hash2(i*3.7,i*1.3)-.5)*.55;V[i]=[v[0]/l*d,v[1]/l*d*.78,v[2]/l*d]}
+ const m=new MeshBuf();for(let i=0;i<V.length;i++){const v=V[i],l=Math.hypot(...v),d=1+(hash2(i*3.7,i*1.3)-.5)*.26+(hash2(i*9.1,i*5.3)-.5)*.34;V[i]=[v[0]/l*d,v[1]/l*d*.78,v[2]/l*d]}
  const acc=V.map(()=>[0,0,0]);
  for(const f of NF){const A=V[f[0]],B=V[f[1]],C=V[f[2]];const ux=B[0]-A[0],uy=B[1]-A[1],uz=B[2]-A[2],vx=C[0]-A[0],vy=C[1]-A[1],vz=C[2]-A[2];const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;for(const k of f){acc[k][0]+=nx;acc[k][1]+=ny;acc[k][2]+=nz}}
  for(let i=0;i<V.length;i++){m.p.push(V[i][0],V[i][1],V[i][2]);const a=acc[i],il=1/Math.hypot(a[0],a[1],a[2]);m.n.push(a[0]*il,a[1]*il,a[2]*il);m.c.push(1,1,1);m.b.push(0);m.v++}
@@ -87,14 +87,20 @@ function buildCylGeo(seg,open){const m=new MeshBuf();seg=seg||10;
  if(!open){const s=m.v;m.p.push(0,1,0);m.n.push(0,1,0);m.c.push(1,1,1);m.b.push(0);m.v++;for(let i=0;i<seg;i++)m.i.push(s,i+seg+1,i+seg+2)}
  return interleave(m)}
 /* ---- cone (coral tips / foliage spikes) ---- */
-function buildConeGeo(){const m=new MeshBuf(),seg=7;m.p.push(0,0,0);m.n.push(0,-1,0);m.c.push(1,1,1);m.b.push(0);m.v++;
- for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;m.p.push(Math.cos(a),0,Math.sin(a));m.n.push(Math.cos(a),.3,Math.sin(a));m.c.push(1,1,1);m.b.push(0);m.v++}
- m.p.push(0,1.6,0);m.n.push(0,1,0);m.c.push(1,1,1);m.b.push(0);m.v++;const tip=m.v-1;
- for(let i=0;i<seg;i++){m.i.push(0,1+i,2+i);m.i.push(1+i,tip,2+i)}return interleave(m)}
+function buildConeGeo(){const m=new MeshBuf(),seg=7;
+ function cone(cx,cz,r,h,tx,tz,cb,ct){const base=m.v;
+  m.p.push(cx,0,cz);m.n.push(0,-1,0);m.c.push(cb,cb,cb);m.b.push(0);m.v++;
+  for(let i=0;i<=seg;i++){const a=i/seg*Math.PI*2;m.p.push(cx+Math.cos(a)*r,0,cz+Math.sin(a)*r);m.n.push(Math.cos(a),.3,Math.sin(a));m.c.push(cb,cb,cb);m.b.push(0);m.v++}
+  const tip=m.v;m.p.push(cx+tx*h,h,cz+tz*h);m.n.push(tx,.9,tz);m.c.push(ct,ct,ct);m.b.push(0);m.v++;
+  for(let i=0;i<seg;i++){m.i.push(base,base+1+i,base+2+i);m.i.push(base+1+i,tip,base+2+i)}}
+ cone(0,0,.42,1.25,0,0,.72,1.12);
+ cone(.20,.08,.20,.95,.55,.2,.72,1.12); cone(-.19,.12,.19,.85,-.5,.3,.72,1.12);
+ cone(.06,-.21,.18,.8,.15,-.55,.72,1.12); cone(-.10,-.14,.14,.6,-.3,-.4,.72,1.12);
+ return interleave(m)}
 /* ---- fish ---- */
 function buildFishGeo(){const m=new MeshBuf(),C=[.75,.85,.95],TC=[.5,.75,1];
- const ST=[[1.15,0,0,0.02],[0.85,0.115,0.185,0.08],[0.30,0.175,0.285,0.22],[-0.30,0.150,0.245,0.45],[-0.80,0.075,0.125,0.75],[-1.05,0.030,0.045,1.0]];
- const RAD=6;function V(x,y,z,nx,ny,nz,col,b){m.p.push(x,y,z);m.n.push(nx,ny,nz);m.c.push(col[0],col[1],col[2]);m.b.push(b);m.v++}
+ const ST=[[1.15,0,0,0.02],[0.85,0.115,0.185,0.08],[0.30,0.175,0.285,0.22],[-0.30,0.150,0.245,0.45],[-0.55,0.115,0.190,0.60],[-0.80,0.075,0.125,0.75],[-1.05,0.030,0.045,1.0]];
+ const RAD=8;function V(x,y,z,nx,ny,nz,col,b){m.p.push(x,y,z);m.n.push(nx,ny,nz);m.c.push(col[0],col[1],col[2]);m.b.push(b);m.v++}
  V(0,0,1.15,0,0,1,C,0.02);const nose=0;const rings=[];
  for(let si=1;si<ST.length;si++){const st=ST[si],ring=[];
   for(let k=0;k<RAD;k++){const a=k/RAD*Math.PI*2,ca=Math.cos(a),sa=Math.sin(a);
@@ -109,9 +115,9 @@ function buildFishGeo(){const m=new MeshBuf(),C=[.75,.85,.95],TC=[.5,.75,1];
  return interleave(m)}
 /* ---- manta ---- */
 function buildMantaGeo(){const m=new MeshBuf(),C=[.32,.38,.55];
- const XS=[-3.2,-2.4,-1.6,-0.8,0,0.8,1.6,2.4,3.2],TS=[0,0.5,1],grid=[];
+ const XS=[-3.2,-2.67,-2.13,-1.6,-1.07,-0.53,0,0.53,1.07,1.6,2.13,2.67,3.2],TS=[0,0.25,0.5,0.75,1],grid=[];
  for(let xi=0;xi<XS.length;xi++){const x=XS[xi],ax=Math.abs(x)/3.2,zf=1.55-0.34*Math.abs(x),zb=-0.75-0.10*Math.abs(x)+0.55*(1-ax),row=[];
-  for(let ti=0;ti<TS.length;ti++){const t=TS[ti],y=0.17*Math.sin(Math.PI*t)*(1-0.3*ax)-0.30*ax*ax*t;
+  for(let ti=0;ti<TS.length;ti++){const t=TS[ti],y=0.17*Math.sin(Math.PI*t)*(1-0.3*ax)-0.30*ax*ax*t+0.34*Math.sin(Math.PI*t)*(1-ax*ax);
    m.p.push(x,y,zf+(zb-zf)*t);m.n.push(0,1,0);m.c.push(C[0],C[1],C[2]);m.b.push(ax);m.v++;row.push(m.v-1)}
   grid.push(row)}
  const idx=[];for(let xi=0;xi<XS.length-1;xi++)for(let ti=0;ti<TS.length-1;ti++){const a=grid[xi][ti],b=grid[xi+1][ti],c=grid[xi][ti+1],d=grid[xi+1][ti+1];idx.push(a,b,c,b,d,c)}
@@ -130,25 +136,58 @@ function buildQuadGeo(){const m=new MeshBuf();m.quad([-1,-1,0],[1,-1,0],[1,1,0],
 function InstList(){this.d=[]} /* ox oy oz | sx sy sz | rotY phase spark seed | r g b  => 13 floats */
 InstList.prototype.add=function(x,y,z,sx,sy,sz,rot,r,g,b,seed){this.d.push(x,y,z,sx,sy,sz,rot,rnd()*6.28,0,seed||0,r,g,b,0)};
 InstList.prototype.buf=function(){return new Float32Array(this.d)};
-const CLEAR=[[-4,-40,5],[0,36,7],[-5,8,6],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6],[32,-15,5],[2,-33,5]];
+const CLEAR=[[25,-24,3.5],[-4,-40,5],[0,36,8],[-5,8,8],[0,32,5.5],[-8,18,5.5],[-20,-2,5.5],[-16,-18,5.5],[2,-30,5.5],[15,-24,5.5],[10,-40,5.5],[-6,-54,5.5],[-17,-30,5.5],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6],[32,-15,5],[2,-33,5]];
 function scatterPos(minR,maxR){for(let k=0;k<60;k++){const a=rnd()*6.283,r=minR+rnd()*(maxR-minR),x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)>104||Math.abs(z)>104)continue;let bad=false;for(const c of CLEAR){const dx=x-c[0],dz=z-c[1];if(dx*dx+dz*dz<c[2]*c[2]){bad=true;break}}if(!bad)return[x,groundH(x,z),z]}return[60,groundH(60,60),60]}
+const FLYPTS=[[0,3,36],[-10,1,14],[-22,2,-4],[-14,-1,-22],[4,0,-33],[17,1.5,-20],[12,3,-42],[-3,3,-57],[-19,2,-32],[-10,5,2]];
+function pathDist(x,z){let m=1e9;for(let i=0;i<FLYPTS.length;i++){const a=FLYPTS[i],b=FLYPTS[(i+1)%FLYPTS.length];const vx=b[0]-a[0],vz=b[2]-a[2];let t=((x-a[0])*vx+(z-a[2])*vz)/((vx*vx+vz*vz)||1);t=Math.max(0,Math.min(1,t));const dx=x-(a[0]+vx*t),dz=z-(a[2]+vz*t);const d=dx*dx+dz*dz;if(d<m)m=d}return Math.sqrt(m)}
 const rocks=new InstList(),foliage=new InstList(),sponges=new InstList(),corals=new InstList(),cover=new InstList(),kelp=new InstList();
 /* canyon wall rocks + scattered boulders */
-for(let i=0;i<210;i++){const[x,y,z]=scatterPos(8,102);const s=.8+rnd()*rnd()*4.2;rocks.add(x,y-s*.25,z,s,s*(0.7+rnd()*.6),s,rnd()*6.28,.55+rnd()*.18,.53+rnd()*.16,.63+rnd()*.16)}
+for(let i=0;i<210;i++){const[x,y,z]=scatterPos(8,102);const s=.8+rnd()*rnd()*4.2;rocks.add(x,y-s*.25,z,s,s*(0.7+rnd()*.6),s,rnd()*6.28,.50+rnd()*.15,.47+rnd()*.13,.55+rnd()*.13)}
 /* floating boulders */
 for(let i=0;i<10;i++){const[x,,z]=scatterPos(18,85);const s=.6+rnd()*1.1;rocks.add(x,10+rnd()*6,z,s,s*.8,s,rnd()*6.28,.42,.44,.52)}
 /* arch at (-27,-14): pillars + arc */
 (function(){const ax=-27,az=-14,gb=groundH(ax,az);
- for(const sx of[-9,9]){const gy=groundH(ax+sx,az);for(let i=0;i<6;i++){rocks.add(ax+sx+(rnd()-.5)*.6,gy+i*2.55-0.4,az+(rnd()-.5)*1.0,1.55+rnd()*.35,1.85,1.55+rnd()*.35,rnd()*6.28,.60,.58,.66)}}
- for(let i=0;i<=11;i++){const a=Math.PI*i/11;rocks.add(ax+Math.cos(a)*9.2,gb+15.0+Math.sin(a)*6.0,az+(rnd()-.5)*.7,1.7+rnd()*.3,1.45,1.7+rnd()*.3,rnd()*6.28,.62,.60,.68)}})();
+ for(const sx of[-9,9]){const gy=groundH(ax+sx,az);for(let i=0;i<8;i++){rocks.add(ax+sx+(rnd()-.5)*.6,gy+i*2.05-0.4,az+(rnd()-.5)*1.0,1.8+rnd()*.4,1.85,1.8+rnd()*.4,rnd()*6.28,.54+rnd()*.15,.52+rnd()*.14,.62+rnd()*.14)}}
+ for(let i=0;i<=17;i++){const a=Math.PI*i/17;rocks.add(ax+Math.cos(a)*9.2,gb+15.0+Math.sin(a)*6.0,az+(rnd()-.5)*.7,2.05+rnd()*.35,1.5,1.85+rnd()*.3,rnd()*6.28,.54+rnd()*.15,.52+rnd()*.14,.62+rnd()*.14)}})();
 /* kelp forest — dense towering columns */
-for(let i=0;i<880;i++){let p=scatterPos(2,100);if(p[1]>2)p=scatterPos(2,55);const inner=rnd()<.35;if(inner){const q=scatterPos(2,45);if(q[1]<=2)p=q}const hgt=Math.min((inner?13+rnd()*11:10+rnd()*10),20-p[1]);kelp.add(p[0],p[1]-.2,p[2],.8+rnd()*.7,hgt,.8,rnd()*6.28,.2,.6,.25)}
+for(let i=0;i<760;i++){let p=null;for(let k=0;k<8&&!p;k++){const q=scatterPos(2,100);if(q[1]<=2&&pathDist(q[0],q[2])>=5)p=q}if(!p)p=scatterPos(30,100);if(Math.hypot(p[0],p[2])<20&&rnd()<0.4){const q=scatterPos(26,70);if(q[1]<=2&&pathDist(q[0],q[2])>=5)p=q}const inner=rnd()<.35;if(inner){const q=scatterPos(2,45);if(q[1]<=2&&pathDist(q[0],q[2])>=5)p=q}const hgt=Math.min((inner?13+rnd()*11:10+rnd()*10),20-p[1]);kelp.add(p[0],p[1]-.2,p[2],.8+rnd()*1.1,hgt,.8,rnd()*6.28,.72+rnd()*.6,.9+rnd()*.35,.68+rnd()*.4)}
 /* iridescent foliage fans (squashed spheres) + magenta ground cover */
-for(let i=0;i<420;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*1.5;foliage.add(x,y+s*.15,z,s,s*.45,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
-for(let i=0;i<850;i++){let[x,y,z]=scatterPos(2,100);if(y>6){const q=scatterPos(2,60);x=q[0];y=q[1];z=q[2]}const s=.35+rnd()*.8;cover.add(x,y+.06,z,s,s*.22,s,rnd()*6.28,.78,.16+rnd()*.15,.55+rnd()*.2)}
+for(let i=0;i<420;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*1.5;foliage.add(x,y+s*.15,z,s,s*.5,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25);if(rnd()<.3)foliage.add(x+(rnd()-.5)*.4,y+s*.42,z+(rnd()-.5)*.4,s*.55,s*.3,s*.55,rnd()*6.28,.66+rnd()*.3,.27+rnd()*.2,.78)}
+for(let i=0;i<850;i++){let[x,y,z]=scatterPos(2,100);if(y>6){const q=scatterPos(2,60);x=q[0];y=q[1];z=q[2]}const s=.9+rnd()*1.6;cover.add(x,y+.06,z,s,s*.13,s,rnd()*6.28,.80,.15+rnd()*.14,.58+rnd()*.2)}
 for(let i=0;i<300;i++){let[x,y,z]=scatterPos(14,50);if(y>6){const q=scatterPos(14,44);x=q[0];y=q[1];z=q[2]}const s=.8+rnd()*1.3;cover.add(x,y+.06,z,s,s*.22,s,rnd()*6.28,.80,.15+rnd()*.16,.58+rnd()*.2)}
+/* magenta cover carpets flanking the fly path */
+(function(){for(let i=0;i<18;i++){const a=FLYPTS[i%FLYPTS.length],b=FLYPTS[(i+1)%FLYPTS.length],t=rnd();
+  const px=a[0]+(b[0]-a[0])*t,pz=a[2]+(b[2]-a[2])*t;let vx=b[0]-a[0],vz=b[2]-a[2];const il=1/(Math.hypot(vx,vz)||1);vx*=il;vz*=il;
+  const sgn=rnd()<.5?-1:1,off=6.5+rnd()*5,cx=px-vz*sgn*off,cz=pz+vx*sgn*off,cy=groundH(cx,cz);if(cy>3)continue;
+  for(let j=0;j<5;j++){const aa=rnd()*6.28,rr=rnd()*3;cover.add(cx+Math.cos(aa)*rr,cy+.07,cz+Math.sin(aa)*rr,2.2+rnd()*1.5,.3,2.2+rnd()*1.5,rnd()*6.28,.82,.13+rnd()*.12,.60+rnd()*.18)}
+  if(rnd()<.7)foliage.add(cx,cy+.25,cz,1.5+rnd()*.8,.6,1.5+rnd()*.8,rnd()*6.28,.66,.24,.78)}})();
+/* dense cover rings at the two hero sites the cameras frame */
+(function(){for(const[hx,hz,hr]of[[-27,-14,11],[19,-30,12]]){for(let j=0;j<13;j++){const a=rnd()*6.28,r=5+rnd()*(hr-5),x=hx+Math.cos(a)*r,z=hz+Math.sin(a)*r,y=groundH(x,z);if(y>3)continue;const s2=1.4+rnd()*1.6;cover.add(x,y+.06,z,s2,s2*.13,s2,rnd()*6.28,.81,.14+rnd()*.13,.59+rnd()*.19)}}})();
 /* barrel sponges */
 for(let i=0;i<130;i++){let[x,y,z]=scatterPos(4,95);if(y>6){const q=scatterPos(4,60);x=q[0];y=q[1];z=q[2]}const s=.5+rnd()*.9;sponges.add(x,y,z,s,1+rnd()*1.6,s,rnd()*6.28,.85,.55+rnd()*.25,.18)}
+/* garden-crowned rock pillars in the mid-field */
+(function(){for(let i=0;i<10;i++){const[x,y,z]=scatterPos(18,80);if(y>4)continue;const n=3+(rnd()*2|0),s=1.7+rnd()*0.8;let ty=y;
+  for(let j=0;j<n;j++){rocks.add(x+(rnd()-.5)*.5,ty+s*.42,z+(rnd()-.5)*.5,s,s*.85,s,rnd()*6.28,.55+rnd()*.15,.53+rnd()*.13,.63+rnd()*.13);ty+=s*.8}
+  foliage.add(x,ty+.3,z,1.7+rnd()*.7,.8,1.7+rnd()*.7,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25);
+  if(rnd()<.6)sponges.add(x+.8,ty-.6,z+.4,.8,1.6+rnd(),.8,rnd()*6.28,.85,.55+rnd()*.25,.18);
+  if(rnd()<.6)corals.add(x-.7,ty+.1,z-.5,.8,1.1+rnd()*.6,.8,rnd()*6.28,1,.4,.5)}})();
+/* garden mesas: raised reef shelves topped with dense garden, in mid-field sightlines */
+(function(){for(let i=0;i<6;i++){const[x,y,z]=scatterPos(24,58);if(y>3)continue;const sx=6+rnd()*3;
+  rocks.add(x,y+0.4,z,sx,1.5,sx*0.85,rnd()*6.28,.55,.53,.63); rocks.add(x,y+1.7,z,sx*0.78,1.3,sx*0.66,rnd()*6.28,.57,.55,.65);
+  const ty=y+2.4;
+  for(let j=0;j<7;j++){const a=rnd()*6.28,r=rnd()*sx*0.36;cover.add(x+Math.cos(a)*r,ty,z+Math.sin(a)*r,1.2+rnd()*1.1,.3,1.2+rnd()*1.1,rnd()*6.28,.80,.15+rnd()*.16,.58+rnd()*.2)}
+  for(let j=0;j<3;j++){const a=rnd()*6.28,r=rnd()*sx*0.3;foliage.add(x+Math.cos(a)*r,ty+.2,z+Math.sin(a)*r,1.2+rnd()*.7,.6,1.2+rnd()*.7,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
+  for(let j=0;j<2;j++){const a=rnd()*6.28,r=rnd()*sx*0.28,s2=.9+rnd()*.5;sponges.add(x+Math.cos(a)*r,ty,z+Math.sin(a)*r,s2,1.7+rnd()*.8,s2,rnd()*6.28,.85,.55+rnd()*.25,.18)}
+  for(let j=0;j<3;j++){const a=rnd()*6.28,r=rnd()*sx*0.34,s2=.9+rnd()*.5;corals.add(x+Math.cos(a)*r,ty,z+Math.sin(a)*r,s2,1.1+rnd()*.6,s2,rnd()*6.28,1,.38+rnd()*.2,.48)}}})();
+/* garden raised into view: arch growth, rim sponges, big barrels near the ship sightline */
+(function(){const gb=groundH(-27,-14);
+ for(let i=0;i<=6;i++){const a=Math.PI*i/6,x=-27+Math.cos(a)*9.2,z=-14,y=gb+15.0+Math.sin(a)*6.0;
+  foliage.add(x+(rnd()-.5),y+.4,z+(rnd()-.5),1.1+rnd()*.8,.6,1.1+rnd()*.8,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25);
+  if(i%2&&(i<2||i>4))corals.add(x,y+.3,z,0.9+rnd()*.6,1.1+rnd()*.8,0.9+rnd()*.6,rnd()*6.28,1,.4,.5)}
+ for(const sx of[-9,9]){const gy=groundH(-27+sx,-14);for(let i=0;i<3;i++)foliage.add(-27+sx+(rnd()-.5)*1.6,gy+4+i*3.4,-14+(rnd()-.5)*1.6,1.3+rnd()*.8,.65,1.3+rnd()*.8,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
+ for(let i=0;i<16;i++){const[x,y,z]=scatterPos(26,72);sponges.add(x,y+1.2,z,.7+rnd()*.6,1.6+rnd()*1.4,.7+rnd()*.6,rnd()*6.28,.85,.55+rnd()*.25,.18)}
+ for(let i=0;i<8;i++){const x=23+(rnd()-.5)*7,z=-21+(rnd()-.5)*7,y=groundH(x,z),s=1.5+rnd()*.8;sponges.add(x,y,z,s,2.2+rnd()*1.2,s,rnd()*6.28,.87,.52+rnd()*.25,.17)}
+ for(let i=0;i<10;i++){const x=-14+(rnd()-.5)*10,z=2+(rnd()-.5)*10,y=groundH(x,z),s=1.2+rnd()*.7;sponges.add(x,y,z,s,1.8+rnd(),s,rnd()*6.28,.87,.52+rnd()*.25,.17)}})();
 /* coral cones clusters */
 for(let i=0;i<520;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,60);x=q[0];y=q[1];z=q[2]}const s=.4+rnd()*1.1;const warm=rnd();corals.add(x,y,z,s,s*(0.8+rnd()),s,rnd()*6.28,1,.35+warm*.3,.45+warm*.25)}
 /* hero cluster in pose-1 view + ship encrustation */
@@ -160,7 +199,7 @@ for(let i=0;i<520;i++){let[x,y,z]=scatterPos(3,98);if(y>6){const q=scatterPos(3,
  for(const q of[[-4,3.5,1.2],[0.5,3.5,-1.4],[3,3.5,1.0],[5.5,3.5,-1.2],[-6.5,4.9,0.5]]){const p=SP(q[0],q[1],q[2]),s=.7+rnd()*.4;foliage.add(p[0],p[1],p[2],s,s*.45,s,rnd()*6.28,.62+rnd()*.3,.25+rnd()*.2,.75+rnd()*.25)}
  for(const q of[[8,0.8,2.3],[-7.5,2.2,2.3],[1,3.5,1.6]]){const p=SP(q[0],q[1],q[2]),s=.5+rnd()*.5,warm=rnd();corals.add(p[0],p[1],p[2],s,s*(0.8+rnd()),s,rnd()*6.28,1,.35+warm*.3,.45+warm*.25)}})();
 /* ============ set pieces: ship + whale fluke (one static mesh) ============ */
-function buildSetPieces(){const m=new MeshBuf(),wood=[.48,.30,.15],wood2=[.58,.40,.22],iron=[.30,.33,.38],stone=[.68,.70,.76],stone2=[.58,.60,.66];
+function buildSetPieces(){const m=new MeshBuf(),wood=[.41,.26,.13],wood2=[.49,.34,.19],woodD=[.25,.15,.08],iron=[.30,.33,.38],stone=[.55,.57,.64],stone2=[.45,.47,.54];
  const sx=19,sz=-30,sy=groundH(sx,sz)+1.1,ry=.7,tilt=.16;
  const L=(x,y,z)=>{const cs=Math.cos(ry),sn=Math.sin(ry);return[sx+x*cs+z*sn,sy+y+Math.sin(tilt)*x,sz-x*sn+z*cs]};
  function BX(cx,cy,cz,bx,by,bz,col){const hx=bx/2,hy=by/2,hz=bz/2;const cs=Math.cos(ry),sn=Math.sin(ry);
@@ -171,8 +210,8 @@ function buildSetPieces(){const m=new MeshBuf(),wood=[.48,.30,.15],wood2=[.58,.4
  {const SEC=13,CROSS=9,hv=[],dk=[],hidx=[];
   const HW=t=>{let hw=0.4+3.0*Math.sin(Math.PI*(0.10+0.80*t));if(t>0.8)hw*=1-(t-0.8)*3.0;return hw};
   for(let si=0;si<SEC;si++){const t=si/(SEC-1),fx=-9+t*18,hw=HW(t),dy=3.1+1.5*Math.pow(2*t-1,2),ky=-1.9+1.6*Math.pow(2*t-1,2);
-   const pts=[[-hw,dy],[-hw*0.98,dy-0.8],[-hw*0.90,dy-1.7],[-hw*0.55,ky+0.55],[0,ky],[hw*0.55,ky+0.55],[hw*0.90,dy-1.7],[hw*0.98,dy-0.8],[hw,dy]],col=si%2?wood2:wood;
-   for(let ci=0;ci<CROSS;ci++){const wp=L(fx,pts[ci][1],pts[ci][0]);hv.push(m.v);m.p.push(wp[0],wp[1],wp[2]);m.n.push(0,1,0);m.c.push(col[0],col[1],col[2]);m.b.push(0);m.v++}
+   const pts=[[-hw,dy],[-hw*0.98,dy-0.8],[-hw*0.90,dy-1.7],[-hw*0.55,ky+0.55],[0,ky],[hw*0.55,ky+0.55],[hw*0.90,dy-1.7],[hw*0.98,dy-0.8],[hw,dy]];
+   for(let ci=0;ci<CROSS;ci++){const wp=L(fx,pts[ci][1],pts[ci][0]),base=ci%2?woodD:wood2,cf=ci===4?0.74:(ci===3||ci===5)?0.88:1.0;hv.push(m.v);m.p.push(wp[0],wp[1],wp[2]);m.n.push(0,1,0);m.c.push(base[0]*cf,base[1]*cf,base[2]*cf);m.b.push(0);m.v++}
    for(const zz of[-hw,hw]){const wp=L(fx,dy+0.04,zz);dk.push(m.v);m.p.push(wp[0],wp[1],wp[2]);m.n.push(0,1,0);m.c.push(wood2[0],wood2[1],wood2[2]);m.b.push(0);m.v++}}
   for(let si=0;si<SEC-1;si++){for(let ci=0;ci<CROSS-1;ci++){const a=hv[si*CROSS+ci],b=hv[(si+1)*CROSS+ci];hidx.push(a,b,a+1,b,b+1,a+1)}
    const a=dk[si*2],b=dk[si*2+2];hidx.push(a,b,a+1,b,b+1,a+1)}
@@ -185,22 +224,45 @@ function buildSetPieces(){const m=new MeshBuf(),wood=[.48,.30,.15],wood2=[.58,.4
   fix(hv,hv[6*CROSS+4],false); fix(dk,dk[6*2],true);
   for(const vi of hv.concat(dk)){const a=nacc[vi],il=1/(Math.hypot(a[0],a[1],a[2])||1);m.n[vi*3]=a[0]*il;m.n[vi*3+1]=a[1]*il;m.n[vi*3+2]=a[2]*il}
   for(const i of hidx)m.i.push(i)}
- BX(-6.5,3.9,0,2.6,2.6,3.8,wood2); BX(6.8,3.9,0,2.0,2.4,3.6,wood2);
- BX(-2,6.8,0,.55,6.6,.55,wood2); BX(3.5,5.2,.0,.45,3.6,.45,wood2); BX(-2,8.6,0,2.6,.3,.3,iron); /* masts (main broken) */
+ BX(-6.5,3.9,0,2.6,2.6,3.8,wood2); BX(-6.5,5.5,0,1.9,1.1,2.9,wood); BX(6.8,3.9,0,2.0,2.4,3.6,wood2); BX(6.8,5.3,0,1.4,0.9,2.6,wood); BX(1.5,3.6,1.6,1.1,1.1,1.1,woodD); BX(2.6,3.5,-1.4,0.9,0.9,0.9,wood); BX(-3.4,3.55,1.8,1.3,0.8,1.0,wood2);
+ BX(-2,6.8,0,.55,6.6,.55,wood2); BX(3.5,5.2,.0,.45,3.6,.45,wood2); /* masts (main broken, yard gone) */
+ {function BEAM(p1,p2,w,col){const d=[p2[0]-p1[0],p2[1]-p1[1],p2[2]-p1[2]];
+   let px=d[1]*0-d[2]*1,py=d[2]*0-d[0]*0,pz=d[0]*1-d[1]*0; if(Math.hypot(px,py,pz)<0.01){px=1;py=0;pz=0}
+   let il=1/Math.hypot(px,py,pz);px*=il*w/2;py*=il*w/2;pz*=il*w/2;
+   const qx=d[1]*pz-d[2]*py,qy=d[2]*px-d[0]*pz,qz=d[0]*py-d[1]*px,ql=Math.hypot(qx,qy,qz)||1,nn=[qx/ql,qy/ql,qz/ql];
+   const a=[p1[0]+px,p1[1]+py,p1[2]+pz],b=[p1[0]-px,p1[1]-py,p1[2]-pz],c=[p2[0]-px,p2[1]-py,p2[2]-pz],e=[p2[0]+px,p2[1]+py,p2[2]+pz];
+   m.quad(a,b,c,e,nn,col,0); m.quad(b,a,e,c,[-nn[0],-nn[1],-nn[2]],col,0)}
+  const rope=[.15,.12,.09],MT=L(-2,10.0,0),BW=L(8.6,4.8,0),ST=L(-8.6,5.4,0);
+  const sag=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2-0.9,(a[2]+b[2])/2];
+  BEAM(MT,sag(MT,BW),0.16,rope); BEAM(sag(MT,BW),BW,0.16,rope);
+  BEAM(MT,sag(MT,ST),0.16,rope); BEAM(sag(MT,ST),ST,0.16,rope);
+  BEAM(L(9.2,4.4,0),L(14.8,7.6,0),0.52,woodD); /* bowsprit */
+ }
  BX(10.6,1.7,0,3.4,3.2,2.8,wood); BX(12.6,4.0,0,5.2,.32,.32,wood2); BX(0.5,4.15,0.9,8.2,.38,.38,wood2); BX(2.2,3.95,1.3,1.1,1.1,1.1,wood2); BX(-3.4,3.95,-1.2,1.3,1.1,1.3,iron);
  BX(5.5,1,3.4,2.6,1.6,1.4,iron); BX(-9.5,.6,-2.5,2,1.2,1.6,iron); /* debris */
  /* whale-fluke sculpture at (-9,-48) */
  const wx=-9,wz=-48,wy=groundH(wx,wz);
- m.box(wx,wy+1.2,wz,7,2.4,7,0,stone2); m.box(wx,wy+3.1,wz,4.6,1.6,4.6,.4,stone);
+ m.box(wx,wy+0.5,wz,9.6,1.0,9.6,0,stone2); m.box(wx,wy+1.2,wz,7,2.4,7,0,stone2); m.box(wx,wy+3.1,wz,4.6,1.6,4.6,.4,stone);
  m.box(wx,wy+7.3,wz,2.0,9.0,2.0,.2,stone); /* stalk */
  m.box(wx,wy+11.6,wz,3.6,2.0,3.8,0,stone);
- const fl=(sgn)=>{const y0=wy+12.4;
-  const A=[wx+sgn*1.0,y0,wz-1.7],B=[wx+sgn*1.0,y0,wz+1.7],C=[wx+sgn*4.5,y0+0.1,wz-0.5],D=[wx+sgn*4.5,y0+0.1,wz+2.2],E=[wx+sgn*8.5,y0-1.15,wz+1.5];
-  const A2=[A[0],A[1]-0.8,A[2]],B2=[B[0],B[1]-0.8,B[2]],C2=[C[0],C[1]-0.38,C[2]],D2=[D[0],D[1]-0.38,D[2]],E2=[E[0],E[1]-0.28,E[2]];
-  const UP=[sgn*0.28,1,-0.12],DN=[0,-1,0];
-  m.tri(A,C,B,UP,stone2,0);m.tri(B,C,D,UP,stone2,0);m.tri(C,E,D,UP,stone2,0);
-  m.tri(A2,B2,C2,DN,stone2,0);m.tri(B2,D2,C2,DN,stone2,0);m.tri(C2,D2,E2,DN,stone2,0);
-  m.tri(A,A2,C,UP,stone,0);m.tri(C,A2,C2,UP,stone,0);m.tri(B,D,B2,DN,stone,0);m.tri(D,D2,B2,DN,stone,0)};
+ const fl=(sgn)=>{const y0=wy+12.4,US=[0,.15,.3,.45,.6,.75,.88,1],VS=[0,.25,.5,.75,1];
+  const surf=(dy,cfm,up)=>{const grid=[];
+   for(let ui=0;ui<US.length;ui++){const u=US[ui],row=[];
+    for(let vi=0;vi<VS.length;vi++){const v=VS[vi];
+     const x=wx+sgn*(1.0+u*6.6),zf=wz-1.7+u*1.2,zb=wz+1.2+0.9*Math.sin(u*Math.PI*0.5)-u*0.5,z=zf+(zb-zf)*v;
+     const y=y0+0.5*Math.sin(Math.PI*v)*(1-u*0.35)-u*u*1.9+(vi===2?0.1:0)+dy*(1-u*0.45);
+     let cf=((ui===2||ui===4)?0.72:1.0)*cfm; if(v===0||v===1)cf*=0.88;
+     row.push(m.v);m.p.push(x,y,z);m.n.push(0,1,0);m.c.push(stone[0]*cf,stone[1]*cf,stone[2]*cf);m.b.push(0);m.v++}
+    grid.push(row)}
+   const idx=[];for(let ui=0;ui<US.length-1;ui++)for(let vi=0;vi<VS.length-1;vi++){const a=grid[ui][vi],b=grid[ui+1][vi],c=grid[ui][vi+1],d=grid[ui+1][vi+1];idx.push(a,b,c,b,d,c)}
+   const nacc={};for(const r of grid)for(const vi of r)nacc[vi]=[0,0,0];
+   for(let i=0;i<idx.length;i+=3){const A=idx[i],B=idx[i+1],C2=idx[i+2];
+    const ax=m.p[A*3],ay=m.p[A*3+1],az=m.p[A*3+2],bx=m.p[B*3],by=m.p[B*3+1],bz=m.p[B*3+2],cx=m.p[C2*3],cy=m.p[C2*3+1],cz=m.p[C2*3+2];
+    const ux=bx-ax,uy=by-ay,uz=bz-az,vx=cx-ax,vy=cy-ay,vz=cz-az,nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;
+    for(const k of[A,B,C2]){nacc[k][0]+=nx;nacc[k][1]+=ny;nacc[k][2]+=nz}}
+   for(const r of grid)for(const vi of r){const a=nacc[vi];if((a[1]>0)!==up){a[0]*=-1;a[1]*=-1;a[2]*=-1}const il=1/(Math.hypot(a[0],a[1],a[2])||1);m.n[vi*3]=a[0]*il;m.n[vi*3+1]=a[1]*il;m.n[vi*3+2]=a[2]*il}
+   for(const i of idx)m.i.push(i)};
+  surf(0,0.85,true); surf(-0.55,0.74,false)};
  fl(1);fl(-1);
  /* scattered ruins / columns */
  m.box(-38,groundH(-38,18)+2.2,18,1.6,6.5,1.6,.3,stone2); m.box(-35.4,groundH(-35.4,20)+1.1,20,1.6,3.4,1.6,-.2,stone2); m.box(-36.7,groundH(-36.7,19)+4.6,19,6.4,1.3,1.8,.12,stone);
@@ -216,9 +278,9 @@ function buildSchools(){const L=new InstList();const C=[[0,4.5,-16,8],[-22,6,-36
  for(let s=0;s<C.length;s++)for(let i=0;i<115;i++){const warm=s>=2&&rnd()<.3;
   L.add(C[s][0],C[s][1],C[s][2],.30+rnd()*.18,0,0,C[s][3],warm?.95:.68,warm?.42:.78,warm?.8:.92);
   const st=L.d.length-14;L.d[st+7]=rnd()*6.283;L.d[st+9]=.22+ (i%7)*.015}return L}
-function buildMantas(){const L=new InstList();const C=[[0,11,-30],[-25,13,-45],[6,8,-44],[-10,14,-60],[15,10,-48]];for(let i=0;i<5;i++){L.add(C[i][0],C[i][1],C[i][2],1.05+rnd()*.45,0,0,10+rnd()*6,.36,.42,.54);const st=L.d.length-14;L.d[st+7]=i*1.7;L.d[st+9]=.05+rnd()*.02}return L}
+function buildMantas(){const L=new InstList();const C=[[0,10,-28],[-20,12,-38],[-4,11,-46],[-8,12,-48],[12,10,-40],[16,8,6],[-18,9,-20]];for(let i=0;i<7;i++){L.add(C[i][0],C[i][1],C[i][2],1.05+rnd()*.45,0,0,7+rnd()*3,.24,.30,.42);const st=L.d.length-14;L.d[st+7]=i*1.7;L.d[st+9]=.05+rnd()*.02}return L}
 function buildBubbles(){const L=new InstList();for(let i=0;i<320;i++){const p=i<70?[19+(rnd()-.5)*8,groundH(19,-30)+1,-30+(rnd()-.5)*8]:scatterPos(3,95);L.add(p[0],p[1],p[2],.10+rnd()*.22,0,0,20,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+8]=1;L.d[st+9]=.5+rnd()*1.1}return L}
-function buildParticles(){const L=new InstList();for(let i=0;i<900;i++){const[x,,z]=scatterPos(0,100);L.add(x,-8+rnd()*26,z,.03+rnd()*.07,0,0,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+9]=rnd()}return L}
+function buildParticles(){const L=new InstList();for(let i=0;i<900;i++){const[x,,z]=scatterPos(0,100);L.add(x,-8+rnd()*26,z,.05+rnd()*.09,0,0,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28;L.d[st+9]=rnd()}return L}
 function buildShafts(){const L=new InstList();const spots=[[-6,-8],[10,-30],[-24,-32],[4,-52],[22,-16],[-14,8],[-2,-24],[16,-44],[-30,-6],[-8,-34],[24,-34],[0,14]];for(const sp of spots){L.add(sp[0],10,sp[1],6+rnd()*4,26,1,0,0,0,0);const st=L.d.length-14;L.d[st+7]=rnd()*6.28}return L}
 /* ============ WebGPU core ============ */
 const canvas=document.getElementById('c'),hud=document.getElementById('hud'),uiEl=document.getElementById('ui');
@@ -245,7 +307,6 @@ function look(eye,tx,ty,tz){let zx=eye[0]-tx,zy=eye[1]-ty,zz=eye[2]-tz;let l=Mat
  _v[0]=xx;_v[1]=yx;_v[2]=zx;_v[3]=0;_v[4]=xy;_v[5]=yy;_v[6]=zy;_v[7]=0;_v[8]=xz;_v[9]=yz;_v[10]=zz;_v[11]=0;
  _v[12]=-(xx*eye[0]+xy*eye[1]+xz*eye[2]);_v[13]=-(yx*eye[0]+yy*eye[1]+yz*eye[2]);_v[14]=-(zx*eye[0]+zy*eye[1]+zz*eye[2]);_v[15]=1}
 function mulVp(){for(let c=0;c<4;c++)for(let r=0;r<4;r++){let s=0;for(let k=0;k<4;k++)s+=_pr[k*4+r]*_v[c*4+k];_vp[c*4+r]=s}}
-const FLYPTS=[[0,3,36],[-10,1,14],[-22,2,-4],[-14,0,-22],[4,1,-33],[17,3,-20],[12,6,-42],[-3,3,-57],[-19,4,-32],[-10,5,2]];
 function catmull(p0,p1,p2,p3,t,out){const t2=t*t,t3=t2*t;for(let i=0;i<3;i++)out[i]=.5*((2*p1[i])+(-p0[i]+p2[i])*t+(2*p0[i]-5*p1[i]+4*p2[i]-p3[i])*t2+(-p0[i]+3*p1[i]-3*p2[i]+p3[i])*t3)}
 const _fp=new Float32Array(3),_fp2=new Float32Array(3);
 const flyLog={t:new Float32Array(7200),n:0,done:false,stats:null};
@@ -269,22 +330,29 @@ fn fogMix(col:vec3f,wp:vec3f)->vec3f{
  let d=length(wp-u.cam.xyz);
  let depthT=clamp((22.0-wp.y)/46.0,0.0,1.0);
  var fc=mix(vec3f(0.075,0.42,0.50),vec3f(0.003,0.045,0.185),depthT);
- fc=mix(fc,vec3f(0.01,0.09,0.28),clamp(d/140.0,0.0,1.0)*0.65);
+ fc=mix(fc,vec3f(0.01,0.09,0.28),clamp(d/125.0,0.0,1.0)*0.8);
  let f=1.0-exp(-d*0.013-d*d*0.00032);
  let absorbed=col*exp(-d*vec3f(0.016,0.004,0.0015));
  return mix(absorbed,fc,clamp(f,0.0,1.0));}
-fn lightCalc(col:vec3f,n:vec3f,wp:vec3f,causticAmt:f32)->vec3f{
+fn lightCalc(col:vec3f,n0in:vec3f,wp:vec3f,causticAmt:f32)->vec3f{
+ var n=n0in;
+ let bp=wp*3.1;
+ let bh0=fbm2(bp.xz+bp.yy);
+ let bhx=fbm2(bp.xz+vec2f(0.35,0.0)+bp.yy);
+ let bhz=fbm2(bp.xz+vec2f(0.0,0.35)+bp.yy);
+ let bhy=fbm2(bp.xy+vec2f(0.35,0.0)+bp.zz);
+ n=normalize(n-vec3f(bhx-bh0,bhz-bh0,bhy-bh0)*0.85);
  let ndl=max(dot(n,u.sun.xyz),0.0);
  let amb=mix(vec3f(0.10,0.24,0.40),vec3f(0.27,0.55,0.62),n.y*0.5+0.5);
  let mott=0.72+0.56*fbm2(wp.xz*1.35+wp.yy*0.8);
  var c=col*mott*(amb+vec3f(0.60,0.66,0.58)*ndl*0.9);
- if(n.y>0.45){c+=vec3f(0.42,0.85,0.80)*caust(wp.xz*0.55,u.cam.w)*causticAmt*(0.35+0.65*ndl);}
+ if(n.y>0.15){let cg=smoothstep(0.15,0.75,n.y);c+=vec3f(0.42,0.85,0.80)*pow(caust(wp.xz*0.9,u.cam.w),1.6)*2.4*causticAmt*cg*(0.35+0.65*ndl);}
  let vd=normalize(u.cam.xyz-wp);
  let hv=normalize(vd+u.sun.xyz);
  let spec=pow(max(dot(n,hv),0.0),64.0)*(0.30+0.80*fbm2(wp.xz*0.7+wp.yy*0.5))*ndl;
  c+=spec*vec3f(0.9,1.0,0.95);
- let spk2=step(0.935,vnoise(wp.xz*13.0+wp.yy*10.0))*step(0.935,vnoise(wp.zx*15.0-wp.yy*9.0));
- c+=spk2*vec3f(0.20,0.19,0.16)*(0.35+0.65*ndl);
+ let spk2=step(0.90,vnoise(wp.xz*13.0+wp.yy*10.0))*step(0.90,vnoise(wp.zx*15.0-wp.yy*9.0));
+ c+=spk2*vec3f(0.16,0.15,0.13)*(0.35+0.65*ndl);
  let fr=pow(1.0-max(dot(n,vd),0.0),3.0);
  c+=fr*vec3f(0.06,0.28,0.34);
  return c;}
@@ -303,16 +371,16 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f
  var o:O; o.wp=off+rp; o.n=rn; o.col=icol; o.ph=dat.y; o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_LIT=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f)->@location(0) vec4f{
- let nn=normalize(n); var c=lightCalc(col,nn,wp,0.5);
+ let nn=normalize(n); var c=lightCalc(col,nn,wp,0.85);
  return vec4f(fogMix(c,wp),1.0);}`;
 const FS_LIT_I=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) ph:f32)->@location(0) vec4f{
- let nn=normalize(n); var c=lightCalc(col,nn,wp,0.4);
+ let nn=normalize(n); var c=lightCalc(col,nn,wp,0.45);
  let vd=normalize(u.cam.xyz-wp); let fr=pow(1.0-abs(dot(nn,vd)),2.0);
  c+=fr*mix(vec3f(0.30,0.05,0.38),vec3f(0.05,0.35,0.42),sin(ph+u.cam.w*0.3)*0.5+0.5)*0.38;
  return vec4f(fogMix(c,wp),1.0);}`;
 const VS_KELP=COMMON+`
-struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32};
+struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32,@location(4) tint:vec3f};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
  let h=b; let t=u.cam.w;
@@ -323,10 +391,11 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) h:f32,@
  let curv=h*h*(1.9+0.8*sin(dat.y*2.3));
  var lp=vec3f(px*scl.x+sway+curv, h*scl.y, pz*scl.x+sway*0.35+h*h*0.6*cos(dat.y*1.7));
  let rp=vec3f(lp.x*cs+lp.z*sn,lp.y,-lp.x*sn+lp.z*cs);
- var o:O; o.wp=off+rp; o.h=h; o.ph=dat.y; o.side=p.x; o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
+ var o:O; o.wp=off+rp; o.h=h; o.ph=dat.y; o.side=p.x; o.tint=icol; o.pos=u.vp*vec4f(o.wp,1.0); return o;}`;
 const FS_KELP=COMMON+`
-@fragment fn main(@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32)->@location(0) vec4f{
- var base=mix(vec3f(0.015,0.16,0.05),vec3f(0.10,0.48,0.13),h);
+@fragment fn main(@location(0) wp:vec3f,@location(1) h:f32,@location(2) ph:f32,@location(3) side:f32,@location(4) tint:vec3f)->@location(0) vec4f{
+ var base=mix(vec3f(0.015,0.16,0.05),vec3f(0.10,0.48,0.13),h)*tint;
+ base*=0.94+0.06*sin(side*80.0+ph*7.0);
  base=mix(base,vec3f(0.45,0.55,0.10),pow(h,3.0)*0.7);
  let vein=0.93+0.10*sin(h*46.0+ph);
  base*=0.70+0.55*clamp(1.0-abs(side)/(0.60*(1.0-h*0.45)),0.0,1.0);
@@ -335,14 +404,16 @@ const FS_KELP=COMMON+`
  let wprof=pow(sin(3.14159*(0.12+0.80*h)),1.2)*(1.0-0.75*h*h)+0.03;
  let edge=clamp(abs(side)/(0.55*wprof+0.001),0.0,1.0);
  c*=0.74+0.26*(1.0-edge*edge);
+ c*=0.93+0.14*fbm2(vec2f(h*38.0+ph*9.0,side*7.0));
+ c+=vec3f(0.10,0.14,0.03)*edge*edge*(0.4+0.6*h);
  c+=vec3f(0.05,0.10,0.02)*(1.0-smoothstep(0.0,0.30,edge));
  let vd2=normalize(u.cam.xyz-wp);
  let tl=pow(max(dot(-vd2,u.sun.xyz),0.0),3.0);
  c+=vec3f(0.10,0.42,0.10)*tl*(0.35+0.65*h);
- let cp1=vec2f(h*46.0,(side+0.6)*5.0); let ci1=floor(cp1);
+ let cp1=vec2f(h*58.0,(side+0.6)*5.0); let ci1=floor(cp1);
  let cf1=hash1(ci1.x*7.1+ci1.y*3.7+floor(ph*10.0));
  let ct1=ci1+0.2+0.6*vec2f(hash1(ci1.x*3.3+ci1.y*9.1),hash1(ci1.x*5.7+ci1.y*1.3));
- let spk=step(0.93,cf1)*smoothstep(0.34,0.05,length(cp1-ct1))*(0.55+0.45*sin(u.cam.w*2.4+cf1*40.0));
+ let spk=step(0.93,cf1)*smoothstep(0.26,0.04,length(cp1-ct1))*(0.55+0.45*sin(u.cam.w*2.4+cf1*40.0));
  c+=spk*vec3f(0.9,0.82,0.34)*0.85*(0.4+0.6*h);
  let cp2=vec2f(h*95.0,(side+0.6)*9.0); let ci2=floor(cp2);
  let cf2=hash1(ci2.x*3.3+ci2.y*5.1+floor(ph*23.0));
@@ -370,7 +441,7 @@ const FS_FISH=COMMON+`
  let vd=normalize(u.cam.xyz-wp); c+=pow(1.0-abs(dot(nn,vd)),2.0)*vec3f(0.25,0.4,0.45);
  return vec4f(fogMix(c,wp),1.0);}`;
 const VS_MANTA=COMMON+`
-struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f};
+struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) loc:vec3f};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
  @location(4) off:vec3f,@location(5) scl:vec3f,@location(6) dat:vec4f,@location(7) icol:vec3f)->O{
  let t=u.cam.w; let ang=dat.y+t*dat.w; let R=dat.x;
@@ -378,9 +449,11 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) n:vec3f
  let fwd=normalize(vec3f(-sin(ang),0.05,cos(ang)*0.8));
  let rgt=normalize(cross(vec3f(0.0,1.0,0.0),fwd)); let up2=cross(fwd,rgt);
  let flap=sin(t*1.5+dat.y*3.0)*b*b*0.9;
- let lp=vec3f(p.x,p.y+flap,p.z)*scl.x;
+ var lp=vec3f(p.x,p.y+flap,p.z);
+ let roll=sin(t*0.30+dat.y*2.0)*0.30; let cr=cos(roll); let sr=sin(roll);
+ lp=vec3f(lp.x*cr-lp.y*sr,lp.x*sr+lp.y*cr,lp.z)*scl.x;
  let wp=ctr+rgt*lp.x+up2*lp.y+fwd*lp.z;
- var o:O; o.wp=wp; o.n=rgt*n.x+up2*n.y+fwd*n.z; o.col=icol; o.pos=u.vp*vec4f(wp,1.0); return o;}`;
+ var o:O; o.wp=wp; o.n=rgt*n.x+up2*n.y+fwd*n.z; o.col=icol; o.loc=p; o.pos=u.vp*vec4f(wp,1.0); return o;}`;
 const VS_SURF=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) uv2:vec2f};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32)->O{
@@ -390,8 +463,9 @@ struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) uv2:vec
 const FS_SURF=COMMON+`
 @fragment fn main(@location(0) wp:vec3f,@location(1) uv2:vec2f,@builtin(front_facing) ff:bool)->@location(0) vec4f{
  let t=u.cam.w;
- let w1=caust(wp.xz*0.8,t*1.3); let w2=caust(wp.xz*1.9+7.0,t*1.7);
- var c=mix(vec3f(0.03,0.27,0.39),vec3f(0.30,0.72,0.78),w1*0.40+w2*0.22)+vec3f(0.02,0.05,0.05);
+ let wsc=0.55+0.95*vnoise(wp.xz*0.016); let w1=caust(wp.xz*0.8*wsc,t*1.3); let w2=caust(wp.xz*1.9*wsc+7.0,t*1.7);
+ let patF=0.12+0.88*(1.0-smoothstep(55.0,175.0,length(wp-u.cam.xyz)));
+ var c=mix(vec3f(0.03,0.27,0.39),vec3f(0.30,0.72,0.78),(w1*0.40+w2*0.22)*(0.45+0.55*vnoise(wp.xz*0.008+3.7))*patF)+vec3f(0.02,0.05,0.05);
  let modf=0.74+0.5*caust(wp.xz*0.05+3.0,t*0.4); c*=modf*(0.78+0.5*caust(wp.xz*0.021+9.0,t*0.23));
  let vd=normalize(wp-u.cam.xyz); let sd=max(dot(vd,u.sun.xyz),0.0);
  c+=vec3f(0.9,0.95,0.8)*pow(sd,18.0)*1.4;
@@ -400,15 +474,19 @@ const FS_SURF=COMMON+`
  let d=length(wp-u.cam.xyz); let f=1.0-exp(-d*0.010);
  let f2=smoothstep(40.0,200.0,d);
  c=mix(c,vec3f(0.008,0.075,0.26),max(f*0.55,f2*0.9));
- return vec4f(c,0.94);}`;
+ return vec4f(c,0.94*(1.0-smoothstep(150.0,235.0,d)*0.85));}`;
 const FS_MANTA=COMMON+`
-@fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f)->@location(0) vec4f{
+@fragment fn main(@location(0) wp:vec3f,@location(1) n:vec3f,@location(2) col:vec3f,@location(3) loc:vec3f,@builtin(front_facing) ff:bool)->@location(0) vec4f{
  let nn=normalize(n); let vd=normalize(u.cam.xyz-wp);
  let li=0.45+0.55*abs(dot(nn,u.sun.xyz));
- var c=col*(0.38+0.72*li)*vec3f(0.78,0.96,1.06);
+ var base=col; if(!ff){base=vec3f(0.40,0.46,0.54);}
+ var c=base*(0.34+0.70*li)*vec3f(0.78,0.96,1.06);
+ if(ff){c*=0.72+0.50*fbm2(loc.xz*0.85); c+=step(0.80,vnoise(loc.xz*1.35+loc.yy*2.0))*vec3f(0.08,0.09,0.10);}
+ else{c*=0.82+0.36*fbm2(loc.xz*1.4); c-=step(0.75,vnoise(loc.xz*1.1+3.0))*vec3f(0.09,0.09,0.09); let gb=smoothstep(0.7,0.95,sin(loc.z*16.0)*0.5+0.5)*step(0.1,loc.z)*step(loc.z,1.15)*step(abs(loc.x),1.15); c-=gb*0.15; c-=smoothstep(0.28,0.05,abs(loc.z-1.08))*step(abs(loc.x),0.9)*0.22;}
  let fr=pow(1.0-abs(dot(nn,vd)),2.0);
- c+=fr*vec3f(0.20,0.34,0.40);
- return vec4f(fogMix(c,wp),1.0);}`;
+ if(ff){c+=fr*vec3f(0.05,0.08,0.10);}
+ let fd=length(wp-u.cam.xyz); let ffog=(1.0-exp(-fd*0.016))*0.55;
+ return vec4f(mix(c,vec3f(0.04,0.20,0.34),ffog),1.0);}`;
 const VS_QUAD=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) loc:vec2f,@location(2) dat:vec4f,@location(3) rise:f32};
 @vertex fn main(@location(0) p:vec3f,@location(1) n:vec3f,@location(2) c:vec3f,@location(3) b:f32,
@@ -428,7 +506,7 @@ const FS_QUAD=COMMON+`
    let hl=smoothstep(0.35,0.0,length(loc-vec2f(-0.32,0.36)));
    let a=(ring*0.55+hl*0.7)*fogF*(1.0-rise*0.35);
    if(a<0.004){discard;} return vec4f(vec3f(0.65,0.9,1.0),a);}
- let a=(1.0-smoothstep(0.0,1.0,d))*0.5*fogF;
+ let a=(1.0-smoothstep(0.0,1.0,d))*0.62*fogF;
  if(a<0.004){discard;} return vec4f(vec3f(0.75,0.9,0.95),a);}`;
 const VS_SHAFT=COMMON+`
 struct O{@builtin(position) pos:vec4f,@location(0) wp:vec3f,@location(1) loc:vec2f,@location(2) ph:f32};
@@ -505,7 +583,7 @@ async function init(){
  function vbuf(g){const b=dev.createBuffer({size:g.verts.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,g.verts);return b}
  function ibuf(g){const b=dev.createBuffer({size:g.idx.byteLength,usage:GPUBufferUsage.INDEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,g.idx);return b}
  function instBuf(L){const a=L.buf();const b=dev.createBuffer({size:a.byteLength,usage:GPUBufferUsage.VERTEX|GPUBufferUsage.COPY_DST});dev.queue.writeBuffer(b,0,a);return{b,n:a.length/14}}
- buildRockGeo.hi=true;const rockGeoHi=buildRockGeo();buildRockGeo.hi=false;const rockGeo=buildRockGeo(),cylGeo=buildCylGeo(10,true),coneGeo=buildConeGeo();
+ buildRockGeo.hi=true;const rockGeoHi=buildRockGeo();buildRockGeo.hi=false;for(let i=0;i<rockGeoHi.verts.length;i+=10){rockGeoHi.verts[i+6]*=0.90;rockGeoHi.verts[i+7]*=0.83;rockGeoHi.verts[i+8]*=0.70}const rockGeo=buildRockGeo(),cylGeo=buildCylGeo(10,true),coneGeo=buildConeGeo();
  const draws=[];
  function addDraw(pipeline,g,inst){const d={p:pipeline,v:vbuf(g),i:ibuf(g),n:g.idx.length,ic:1};if(inst){const ib=instBuf(inst);d.ib=ib.b;d.ic=ib.n}draws.push(d);return d}
  addDraw(pPlain,buildTerrain());
@@ -554,7 +632,7 @@ async function init(){
    const P=FLYPTS,N=P.length;catmull(P[(seg+N-1)%N],P[seg%N],P[(seg+1)%N],P[(seg+2)%N],fr,_fp);
    catmull(P[seg%N],P[(seg+1)%N],P[(seg+2)%N],P[(seg+3)%N],fr,_fp2);
    cam.p[0]=_fp[0];cam.p[1]=_fp[1];cam.p[2]=_fp[2];
-   const dx=_fp2[0]-_fp[0],dy=_fp2[1]-_fp[1]-0.6,dz=_fp2[2]-_fp[2];
+   const dx=_fp2[0]-_fp[0],dy=_fp2[1]-_fp[1]-3.6,dz=_fp2[2]-_fp[2];
    cam.yaw=Math.atan2(-dx,-dz);cam.pitch=Math.atan2(dy,Math.hypot(dx,dz));
    if(!flyLog.done&&flyT<=60.5&&flyLog.n<7199){flyLog.t[flyLog.n++]=dt*1000}
    if(!flyLog.done&&flyT>=60){flyLog.done=true;const a=flyLog.t.subarray(0,flyLog.n).slice().sort();
