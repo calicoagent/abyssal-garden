@@ -111,7 +111,7 @@ function buildQuadGeo(){const m=new MeshBuf();m.quad([-1,-1,0],[1,-1,0],[1,1,0],
 function InstList(){this.d=[]} /* ox oy oz | sx sy sz | rotY phase spark seed | r g b  => 13 floats */
 InstList.prototype.add=function(x,y,z,sx,sy,sz,rot,r,g,b,seed){this.d.push(x,y,z,sx,sy,sz,rot,rnd()*6.28,0,seed||0,r,g,b,0)};
 InstList.prototype.buf=function(){return new Float32Array(this.d)};
-const CLEAR=[[0,36,7],[-5,8,6],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6],[32,-15,5],[7,-26,4]];
+const CLEAR=[[0,36,7],[-5,8,6],[-27,4,6],[33,-24,6],[2,-32,6],[16,-38,6],[-9,-48,9],[19,-30,11],[-27,-14,6],[32,-15,5],[2,-33,5]];
 function scatterPos(minR,maxR){for(let k=0;k<60;k++){const a=rnd()*6.283,r=minR+rnd()*(maxR-minR),x=Math.cos(a)*r,z=Math.sin(a)*r;if(Math.abs(x)>104||Math.abs(z)>104)continue;let bad=false;for(const c of CLEAR){const dx=x-c[0],dz=z-c[1];if(dx*dx+dz*dz<c[2]*c[2]){bad=true;break}}if(!bad)return[x,groundH(x,z),z]}return[60,groundH(60,60),60]}
 const rocks=new InstList(),foliage=new InstList(),sponges=new InstList(),corals=new InstList(),cover=new InstList(),kelp=new InstList();
 /* canyon wall rocks + scattered boulders */
@@ -196,7 +196,7 @@ const canvas=document.getElementById('c'),hud=document.getElementById('hud'),uiE
 const Q=new URLSearchParams(location.search);
 const POSES=[
  [[0,2,36],[0,-4,-12]], [[-5,-.5,8],[-12,-5,-22]], [[-27,3,10],[-27,2,-16]],
- [[32,1,-15],[19,-5,-30]], [[7,0,-26],[-9,-1,-48]], [[16,-3,-38],[-6,14,-58]]];
+ [[32,1,-15],[19,-5,-30]], [[2,0,-33],[-9,-1,-48]], [[16,-3,-38],[-6,14,-58]]];
 const cam={p:new Float32Array([0,3,36]),yaw:Math.PI,pitch:-.04};
 let poseIdx=Q.has('pose')?+Q.get('pose'):0;
 if(Q.has('pose')){const P=POSES[poseIdx%6];cam.p.set(P[0]);const dx=P[1][0]-P[0][0],dy=P[1][1]-P[0][1],dz=P[1][2]-P[0][2];cam.yaw=Math.atan2(-dx,-dz);cam.pitch=Math.atan2(dy,Math.hypot(dx,dz))}
